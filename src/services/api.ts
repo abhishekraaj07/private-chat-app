@@ -49,6 +49,11 @@ export function getShareableOrigin(): string {
  * Prioritizes VITE_API_BASE_URL env, localStorage override, Capacitor native detection, or relative origin.
  */
 export function getApiBaseUrl(): string {
+  // On standard web browsers, always use same-origin relative paths to prevent cross-origin CORS blocks
+  if (typeof window !== 'undefined' && !isNativeMobileApp()) {
+    return '';
+  }
+
   if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL) {
     return (import.meta.env.VITE_API_BASE_URL as string).replace(/\/+$/, '');
   }
