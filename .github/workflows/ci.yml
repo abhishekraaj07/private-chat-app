@@ -1,0 +1,33 @@
+﻿name: NEXUS CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate-and-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check (tsc)
+        run: npm run lint
+
+      - name: Run test suites (vitest)
+        run: npm test
+
+      - name: Build production bundle (vite)
+        run: npm run build

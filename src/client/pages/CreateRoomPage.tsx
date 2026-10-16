@@ -6,9 +6,9 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Shield, Copy, Check, ArrowLeft, ArrowRight, Loader2, Users } from 'lucide-react';
+import { Shield, Copy, Check, ArrowLeft, ArrowRight, Loader2, Users, Link2 } from 'lucide-react';
 import { copyToClipboard } from '../../utils/format.ts';
-import { createRoom } from '../../services/api.ts';
+import { createRoom, getRoomInfo, getShareableOrigin } from '../../services/api.ts';
 import { Participant } from '../../types/protocol.ts';
 
 interface CreateRoomPageProps {
@@ -23,6 +23,7 @@ export const CreateRoomPage: React.FC<CreateRoomPageProps> = ({
   const [roomCode, setRoomCode] = useState<string>('');
   const [displayName, setDisplayName] = useState<string>('');
   const [copied, setCopied] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
   const [isCreating, setIsCreating] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,12 +64,10 @@ export const CreateRoomPage: React.FC<CreateRoomPageProps> = ({
 
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`/api/rooms/${roomCode}/info`);
-        if (res.ok) {
-          const info = await res.json();
-          if (info.participantCount >= 2) {
-            setParticipantCount(2);
-          }
+        const info = await getRoomInfo(roomCode);
+        // Since creator enters on clicking "Enter conversation", if 1+ participant is in room, peer has connected
+        if (info.participantCount >= 1) {
+          setParticipantCount(2);
         }
       } catch {
         // ignore polling errors
@@ -87,6 +86,16 @@ export const CreateRoomPage: React.FC<CreateRoomPageProps> = ({
     }
   };
 
+  const handleCopyLink = async () => {
+    if (!roomCode) return;
+    const url = `${getShareableOrigin()}/?room=${roomCode}`;
+    const ok = await copyToClipboard(url);
+    if (ok) {
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    }
+  };
+
   const handleEnter = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const cleanName = displayName.trim() || 'Anonymous';
@@ -97,7 +106,7 @@ export const CreateRoomPage: React.FC<CreateRoomPageProps> = ({
   return (
     <div
       id="create-room-page"
-      className="min-h-screen flex flex-col justify-between bg-[#08090B] text-[#EDEDED] px-4 py-8 select-none"
+      className="min-h-[100dvh] flex flex-col justify-between bg-[#08090B] text-[#EDEDED] px-4 py-6 sm:py-8 select-none"
     >
       {/* Top Header */}
       <div className="max-w-md w-full mx-auto flex items-center justify-between">
@@ -140,25 +149,46 @@ export const CreateRoomPage: React.FC<CreateRoomPageProps> = ({
               <span className="text-[11px] font-mono text-[#8A909E] uppercase tracking-widest">
                 PRIVATE ROOM
               </span>
-              <div className="flex items-center justify-center gap-3 pt-2">
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
                 <div className="px-4 py-2 bg-[#111318] border border-[#1F242D] rounded-xl font-mono text-2xl font-bold tracking-widest text-[#EDEDED] select-all">
                   {roomCode}
                 </div>
-                <button
-                  id="create-room-copy-btn"
-                  onClick={handleCopy}
-                  className="p-3 rounded-xl bg-[#111318] hover:bg-[#1F242D] border border-[#1F242D] text-xs font-mono text-[#EDEDED] transition-colors cursor-pointer"
-                  title="Copy room code"
-                >
-                  {copied ? (
-                    <Check className="w-4 h-4 text-emerald-400" />
-                  ) : (
-                    <Copy className="w-4 h-4 text-[#38BDF8]" />
-                  )}
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    id="create-room-copy-btn"
+                    onClick={handleCopy}
+                    className="p-3 rounded-xl bg-[#111318] hover:bg-[#1F242D] border border-[#1F242D] text-xs font-mono text-[#EDEDED] transition-colors cursor-pointer"
+                    title="Copy room code"
+                  >
+                    {copied ? (
+                      <Check className="w-4 h-4 text-emerald-400" />
+                    ) : (
+                      <Copy className="w-4 h-4 text-[#38BDF8]" />
+                    )}
+                  </button>
+
+                  <button
+                    id="create-room-copy-link-btn"
+                    onClick={handleCopyLink}
+                    className="px-3 py-2.5 rounded-xl bg-[#111318] hover:bg-[#1F242D] border border-[#1F242D] text-xs font-mono text-[#EDEDED] transition-colors cursor-pointer flex items-center gap-1.5"
+                    title="Copy direct invite link"
+                  >
+                    {copiedLink ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        <span className="text-emerald-400">Copied</span>
+                      </>
+                    ) : (
+                      <>
+                        <Link2 className="w-3.5 h-3.5 text-[#38BDF8]" />
+                        <span>Link</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
               <p className="text-xs text-[#8A909E] pt-3 leading-normal">
-                Share this code with the person you want to chat with.
+                Share this code or link with your peer, or enter now to wait inside.
               </p>
             </div>
 

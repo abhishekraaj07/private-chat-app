@@ -119,17 +119,13 @@ export class RoomDurableObject {
       });
     }
 
-    if (url.pathname === '/ws') {
+    if (url.pathname === '/ws' || url.pathname.endsWith('/ws')) {
       if (request.headers.get('Upgrade')?.toLowerCase() !== 'websocket') {
         return new Response('Expected WebSocket upgrade', { status: 426 });
       }
 
       if (this.isExpired()) {
         return new Response('Room expired', { status: 410 });
-      }
-
-      if (this.sessions.size >= 2) {
-        return new Response('Room is full', { status: 403 });
       }
 
       // Create WebSocket pair
@@ -192,9 +188,18 @@ export class RoomDurableObject {
 
     ws.addEventListener('message', async (event: MessageEvent) => {
       try {
-        await this.resetInactivityAlarm();
-
         const rawData = typeof event.data === 'string' ? event.data : '';
+        // 1. Max frame size limit check (8 MB)
+        if (rawData.length > 8 * 1024 * 1024) {
+          this.sendTo(ws, {
+            type: 'error',
+            code: 'INVALID_PAYLOAD',
+            message: 'Message frame exceeds maximum size limit (8MB)',
+          });
+          return;
+        }
+
+        // 2. Strict JSON parsing
         let parsed: unknown;
         try {
           parsed = JSON.parse(rawData);
@@ -207,6 +212,7 @@ export class RoomDurableObject {
           return;
         }
 
+        // 3. Schema and payload validation
         const validation = validateClientMessage(parsed);
         if (!validation.valid || !validation.sanitized) {
           this.sendTo(ws, {
@@ -217,8 +223,14 @@ export class RoomDurableObject {
           return;
         }
 
+        // 4. Rate-limiting & processing
         const msg: ClientMessage = validation.sanitized;
-        await this.processMessage(ws, msg);
+        const processed = await this.processMessage(ws, msg);
+
+        // 5. Inactivity alarm is reset ONLY if message was valid, processed, and not rate-limited
+        if (processed) {
+          await this.resetInactivityAlarm();
+        }
       } catch (err) {
         this.sendTo(ws, {
           type: 'error',
@@ -245,13 +257,25 @@ export class RoomDurableObject {
     ws.addEventListener('error', handleCloseOrError);
   }
 
-  private async processMessage(ws: WebSocket, msg: ClientMessage): Promise<void> {
+  private async processMessage(ws: WebSocket, msg: ClientMessage): Promise<boolean> {
     switch (msg.type) {
       case 'ping':
         this.sendTo(ws, { type: 'pong' });
-        break;
+        return false; // Keepalive pongs do not reset room inactivity expiration
 
       case 'join': {
+        // If reconnecting before old zombie socket timed out, gracefully close & prune old socket
+        for (const [oldWs, s] of this.sessions.entries()) {
+          if (s.participant.id === msg.participantId && oldWs !== ws) {
+            try {
+              oldWs.close(1000, 'Reconnected from new socket');
+            } catch {
+              // ignore
+            }
+            this.sessions.delete(oldWs);
+          }
+        }
+
         // Enforce maximum 2 participants
         if (this.sessions.size >= 2 && !this.sessions.has(ws)) {
           this.sendTo(ws, {
@@ -260,7 +284,7 @@ export class RoomDurableObject {
             message: 'This room already has two participants.',
           });
           ws.close(4003, 'Room full');
-          return;
+          return false;
         }
 
         const participant: Participant = {
@@ -298,7 +322,7 @@ export class RoomDurableObject {
           participant,
           participantCount: this.sessions.size,
         });
-        break;
+        return true;
       }
 
       case 'key-exchange': {
@@ -309,7 +333,7 @@ export class RoomDurableObject {
             code: 'UNAUTHORIZED',
             message: 'You must join before exchanging keys',
           });
-          return;
+          return false;
         }
 
         // Relay the public key to the peer (never decrypts or touches private key)
@@ -318,7 +342,7 @@ export class RoomDurableObject {
           senderId: session.participant.id,
           publicKey: msg.publicKey,
         });
-        break;
+        return true;
       }
 
       case 'message': {
@@ -329,7 +353,7 @@ export class RoomDurableObject {
             code: 'UNAUTHORIZED',
             message: 'You must join before sending messages',
           });
-          return;
+          return false;
         }
 
         // Rate limit check
@@ -340,7 +364,7 @@ export class RoomDurableObject {
             code: 'RATE_LIMITED',
             message: 'Message rate limit exceeded. Please wait a moment.',
           });
-          return;
+          return false;
         }
 
         // Relay encrypted ciphertext verbatim to the peer
@@ -352,17 +376,17 @@ export class RoomDurableObject {
           ciphertext: msg.ciphertext,
           timestamp: msg.timestamp,
         });
-        break;
+        return true;
       }
 
       case 'typing': {
         const session = this.sessions.get(ws);
-        if (!session) return;
+        if (!session) return false;
 
         const now = Date.now();
         // Throttle typing broadcasts to once per 1 second
         if (now - session.lastTypingBroadcast < 1000) {
-          return;
+          return false;
         }
         session.lastTypingBroadcast = now;
 
@@ -371,7 +395,7 @@ export class RoomDurableObject {
           senderId: session.participant.id,
           isTyping: msg.isTyping,
         });
-        break;
+        return true;
       }
 
       case 'leave': {
@@ -390,10 +414,14 @@ export class RoomDurableObject {
             // ignore
           }
         }
-        break;
+        return true;
       }
+
+      default:
+        return false;
     }
   }
+
 
   private sendTo(ws: WebSocket, message: ServerMessage): void {
     try {

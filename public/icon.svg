@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="112" fill="#08090B"/>
+  <rect x="16" y="16" width="480" height="480" rx="96" fill="none" stroke="#1F242D" stroke-width="8"/>
+  <!-- Shield Emblem -->
+  <path d="M256 80L128 136v112c0 102.4 54.4 172.8 128 200 73.6-27.2 128-97.6 128-200V136L256 80z" fill="#0D0F12" stroke="#38BDF8" stroke-width="20" stroke-linejoin="round"/>
+  <!-- Lock Core -->
+  <rect x="208" y="240" width="96" height="80" rx="16" fill="#38BDF8"/>
+  <path d="M228 240v-32a28 28 0 0 1 56 0v32" fill="none" stroke="#38BDF8" stroke-width="16" stroke-linecap="round"/>
+  <circle cx="256" cy="275" r="8" fill="#08090B"/>
+  <path d="M256 283v16" stroke="#08090B" stroke-width="6" stroke-linecap="round"/>
+</svg>

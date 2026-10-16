@@ -22,8 +22,13 @@ const relay = new NexusRelayServer();
 // Security headers
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'self'; connect-src 'self' ws: wss: blob:; font-src 'self' https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self'; img-src 'self' data: blob:; media-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';"
+  );
   next();
 });
 
@@ -55,8 +60,8 @@ app.get('*', (req, res) => {
 
 // WebSocket Upgrade
 server.on('upgrade', (req, socket, head) => {
-  const url = req.url || '';
-  if (url.includes('/api/rooms/') && url.endsWith('/ws')) {
+  const pathname = (req.url || '').split('?')[0].replace(/\/+$/, '');
+  if (pathname.includes('/api/rooms/') && pathname.endsWith('/ws')) {
     relay.wss.handleUpgrade(req, socket, head, (ws) => {
       relay.wss.emit('connection', ws, req);
     });

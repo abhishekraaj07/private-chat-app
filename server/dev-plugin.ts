@@ -37,8 +37,8 @@ export function nexusRelayPlugin(): Plugin {
       // Handle WebSocket upgrade
       if (server.httpServer) {
         server.httpServer.on('upgrade', (req, socket, head) => {
-          const url = req.url || '';
-          if (url.includes('/api/rooms/') && url.endsWith('/ws')) {
+          const pathname = (req.url || '').split('?')[0].replace(/\/+$/, '');
+          if (pathname.includes('/api/rooms/') && pathname.endsWith('/ws')) {
             relay.wss.handleUpgrade(req, socket, head, (ws) => {
               relay.wss.emit('connection', ws, req);
             });

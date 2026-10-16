@@ -18,12 +18,61 @@ export class ApiError extends Error {
   }
 }
 
+export const DEFAULT_PRODUCTION_URL = 'https://nexus-private-chat.abhishekraaj07.workers.dev';
+
+/**
+ * Checks whether the app is executing inside a Capacitor native shell (Android/iOS)
+ * or bundled asset environment.
+ */
+export function isNativeMobileApp(): boolean {
+  if (typeof window === 'undefined') return false;
+  return Boolean(
+    (window as any).Capacitor ||
+    window.location.protocol === 'capacitor:' ||
+    window.location.protocol === 'file:' ||
+    (window.location.hostname === 'localhost' && !window.location.port)
+  );
+}
+
+/**
+ * Returns the public web origin for sharing room links.
+ * Ensures mobile app users generate links targeting the live Cloudflare deployment.
+ */
+export function getShareableOrigin(): string {
+  if (typeof window === 'undefined') return DEFAULT_PRODUCTION_URL;
+  if (isNativeMobileApp()) return DEFAULT_PRODUCTION_URL;
+  return window.location.origin || DEFAULT_PRODUCTION_URL;
+}
+
+/**
+ * Resolves the API base URL for REST endpoints.
+ * Prioritizes VITE_API_BASE_URL env, localStorage override, Capacitor native detection, or relative origin.
+ */
+export function getApiBaseUrl(): string {
+  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL) {
+    return (import.meta.env.VITE_API_BASE_URL as string).replace(/\/+$/, '');
+  }
+
+  if (typeof window !== 'undefined' && window.localStorage) {
+    const custom = window.localStorage.getItem('nexus_relay_url');
+    if (custom) return custom.replace(/\/+$/, '');
+  }
+
+  // Inside Capacitor native app (Android/iOS) or packaged mobile webview
+  if (isNativeMobileApp()) {
+    return DEFAULT_PRODUCTION_URL;
+  }
+
+  return '';
+}
+
 /**
  * Calls POST /api/rooms to create a new private room.
  */
 export async function createRoom(): Promise<CreateRoomResponse> {
+  const base = getApiBaseUrl();
   try {
-    const res = await fetch('/api/rooms', {
+    const res = await fetch(`${base}/api/rooms`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -47,8 +96,9 @@ export async function createRoom(): Promise<CreateRoomResponse> {
  */
 export async function getRoomInfo(code: string): Promise<RoomInfoResponse> {
   const normalized = normalizeRoomCode(code);
+  const base = getApiBaseUrl();
   try {
-    const res = await fetch(`/api/rooms/${normalized}/info`, {
+    const res = await fetch(`${base}/api/rooms/${normalized}/info`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -74,10 +124,17 @@ export async function getRoomInfo(code: string): Promise<RoomInfoResponse> {
 }
 
 /**
- * Resolves the appropriate WebSocket URL based on current origin.
+ * Resolves the appropriate WebSocket URL based on current origin or configured base URL.
  */
 export function getWebSocketUrl(code: string): string {
   const normalized = normalizeRoomCode(code);
+  const base = getApiBaseUrl();
+
+  if (base) {
+    const wsBase = base.replace(/^http:/i, 'ws:').replace(/^https:/i, 'wss:');
+    return `${wsBase}/api/rooms/${normalized}/ws`;
+  }
+
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   return `${protocol}//${window.location.host}/api/rooms/${normalized}/ws`;
 }

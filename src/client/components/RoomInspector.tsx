@@ -5,7 +5,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { X, ShieldCheck, Cpu, Activity, Clock, Wifi, Lock, Users, Copy, Check } from 'lucide-react';
+import { X, ShieldCheck, Cpu, Activity, Clock, Wifi, Lock, Users, Copy, Check, CheckCircle2, ShieldAlert, Sparkles } from 'lucide-react';
 import { Participant } from '../../types/protocol.ts';
 import { formatTimeRemaining, copyToClipboard } from '../../utils/format.ts';
 
@@ -17,7 +17,10 @@ interface RoomInspectorProps {
   expiresAt: number;
   isEncrypted: boolean;
   fingerprint: string | null;
+  isPeerVerified?: boolean;
+  onTogglePeerVerified?: () => void;
   connectionStatus: string;
+  onOpenAbout?: () => void;
 }
 
 export const RoomInspector: React.FC<RoomInspectorProps> = ({
@@ -28,7 +31,10 @@ export const RoomInspector: React.FC<RoomInspectorProps> = ({
   expiresAt,
   isEncrypted,
   fingerprint,
+  isPeerVerified = false,
+  onTogglePeerVerified,
   connectionStatus,
+  onOpenAbout,
 }) => {
   const [timeLeft, setTimeLeft] = useState(formatTimeRemaining(expiresAt));
   const [copiedFingerprint, setCopiedFingerprint] = useState(false);
@@ -183,7 +189,7 @@ export const RoomInspector: React.FC<RoomInspectorProps> = ({
                 <span>SESSION FINGERPRINT</span>
                 <button
                   onClick={handleCopyFingerprint}
-                  className="flex items-center gap-1 text-[#38BDF8] hover:underline"
+                  className="flex items-center gap-1 text-[#38BDF8] hover:underline cursor-pointer"
                 >
                   {copiedFingerprint ? (
                     <>
@@ -202,8 +208,39 @@ export const RoomInspector: React.FC<RoomInspectorProps> = ({
                 {fingerprint}
               </div>
               <p className="mt-1.5 text-[10px] text-[#8A909E] leading-normal font-sans">
-                Both participants will see the exact same fingerprint if their ephemeral key agreement is authentic.
+                Both participants will see the exact same fingerprint if their ephemeral key agreement is authentic. Verify the fingerprint with the other participant for stronger protection against impersonation.
               </p>
+
+              {/* Peer Verification Status & Action */}
+              <div className="mt-3 p-2.5 rounded-md bg-[#111318] border border-[#1F242D] space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] uppercase font-mono text-[#8A909E]">PEER STATUS</span>
+                  {isPeerVerified ? (
+                    <span className="flex items-center gap-1 text-[11px] font-mono text-emerald-400 font-semibold">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      VERIFIED
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-[11px] font-mono text-amber-400 font-semibold">
+                      <ShieldAlert className="w-3.5 h-3.5" />
+                      UNVERIFIED
+                    </span>
+                  )}
+                </div>
+                {onTogglePeerVerified && (
+                  <button
+                    type="button"
+                    onClick={onTogglePeerVerified}
+                    className={`w-full py-1.5 px-2 rounded text-xs font-mono transition-colors cursor-pointer border ${
+                      isPeerVerified
+                        ? 'bg-rose-950/30 text-rose-300 border-rose-800/40 hover:bg-rose-900/40'
+                        : 'bg-emerald-950/40 text-emerald-300 border-emerald-700/50 hover:bg-emerald-900/50'
+                    }`}
+                  >
+                    {isPeerVerified ? 'Mark as Unverified' : 'Mark Peer as Verified'}
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
@@ -231,8 +268,21 @@ export const RoomInspector: React.FC<RoomInspectorProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="mt-auto pt-6 border-t border-[#1F242D] text-[11px] text-[#8A909E] font-sans">
-          No logs or keys are saved. Sessions vanish on room closure.
+        <div className="mt-auto pt-6 border-t border-[#1F242D] space-y-3">
+          <div className="text-[11px] text-[#8A909E] font-sans">
+            No logs or keys are saved. Sessions vanish on room closure.
+          </div>
+          {onOpenAbout && (
+            <button
+              id="inspector-open-about-btn"
+              type="button"
+              onClick={onOpenAbout}
+              className="w-full py-2 px-3 rounded-lg bg-[#111318] hover:bg-[#161B22] border border-[#1F242D] hover:border-[#38BDF8]/40 text-xs font-mono text-[#8A909E] hover:text-[#EDEDED] transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-[#38BDF8]" />
+              <span>Features & Specification</span>
+            </button>
+          )}
         </div>
       </div>
     </div>

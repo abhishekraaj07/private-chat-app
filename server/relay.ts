@@ -125,7 +125,8 @@ export class NexusRelayServer {
    * Creates an active ephemeral room.
    */
   public createRoom(specifiedCode?: string): RoomRecord {
-    const code = specifiedCode || generateRoomCode();
+    const normalizedCode = specifiedCode ? normalizeRoomCode(specifiedCode) : '';
+    const code = normalizedCode && isValidRoomCode(normalizedCode) ? normalizedCode : generateRoomCode();
     const existing = this.rooms.get(code);
     if (existing) {
       if (existing.timer) clearTimeout(existing.timer);
@@ -203,24 +204,19 @@ export class NexusRelayServer {
         room = this.createRoom(roomCode);
       }
 
-      if (room.sessions.size >= 2) {
-        try {
-          const err: ServerMessage = {
-            type: 'error',
-            code: 'ROOM_FULL',
-            message: 'This room already has two participants.',
-          };
-          ws.send(JSON.stringify(err));
-        } catch {
-          // ignore
-        }
-        ws.close(4003, 'Room full');
-        return;
-      }
-
       ws.on('message', (raw: Buffer | string) => {
         try {
           const rawStr = raw.toString();
+          // 1. Max frame size limit (8 MB)
+          if (rawStr.length > 8 * 1024 * 1024) {
+            ws.send(JSON.stringify({
+              type: 'error',
+              code: 'INVALID_PAYLOAD',
+              message: 'Message frame exceeds maximum size limit (8MB)',
+            }));
+            return;
+          }
+
           let parsed: unknown;
           try {
             parsed = JSON.parse(rawStr);
@@ -254,11 +250,13 @@ export class NexusRelayServer {
             return;
           }
 
-          // Reset inactivity timer on any activity
-          currentRoom.lastActiveAt = Date.now();
-          this.scheduleExpiration(currentRoom);
+          const processed = this.handleClientMessage(currentRoom, ws, validation.sanitized);
 
-          this.handleClientMessage(currentRoom, ws, validation.sanitized);
+          // Security: Reset inactivity timer ONLY on valid, non-rate-limited activity
+          if (processed) {
+            currentRoom.lastActiveAt = Date.now();
+            this.scheduleExpiration(currentRoom);
+          }
         } catch (err) {
           try {
             ws.send(JSON.stringify({
@@ -293,7 +291,7 @@ export class NexusRelayServer {
     });
   }
 
-  private handleClientMessage(room: RoomRecord, ws: WebSocket, msg: ClientMessage): void {
+  private handleClientMessage(room: RoomRecord, ws: WebSocket, msg: ClientMessage): boolean {
     switch (msg.type) {
       case 'ping':
         try {
@@ -301,9 +299,21 @@ export class NexusRelayServer {
         } catch {
           // ignore
         }
-        break;
+        return false; // Keepalive pongs do not reset room inactivity timer
 
       case 'join': {
+        // If reconnecting before old zombie socket timed out, gracefully close & prune old socket
+        for (const [oldWs, s] of room.sessions.entries()) {
+          if (s.participant.id === msg.participantId && oldWs !== ws) {
+            try {
+              oldWs.close(1000, 'Reconnected from new socket');
+            } catch {
+              // ignore
+            }
+            room.sessions.delete(oldWs);
+          }
+        }
+
         if (room.sessions.size >= 2 && !room.sessions.has(ws)) {
           const err: ServerMessage = {
             type: 'error',
@@ -312,7 +322,7 @@ export class NexusRelayServer {
           };
           ws.send(JSON.stringify(err));
           ws.close(4003, 'Room full');
-          return;
+          return false;
         }
 
         const participant: Participant = {
@@ -351,7 +361,7 @@ export class NexusRelayServer {
           participant,
           participantCount: room.sessions.size,
         });
-        break;
+        return true;
       }
 
       case 'key-exchange': {
@@ -362,7 +372,7 @@ export class NexusRelayServer {
             code: 'UNAUTHORIZED',
             message: 'Must join room before key exchange',
           }));
-          return;
+          return false;
         }
 
         // Forward public key to peer without inspecting or touching private data
@@ -371,7 +381,7 @@ export class NexusRelayServer {
           senderId: session.participant.id,
           publicKey: msg.publicKey,
         });
-        break;
+        return true;
       }
 
       case 'message': {
@@ -382,7 +392,7 @@ export class NexusRelayServer {
             code: 'UNAUTHORIZED',
             message: 'Must join room before messaging',
           }));
-          return;
+          return false;
         }
 
         const rateCheck = session.rateLimiter.check(session.participant.id);
@@ -392,7 +402,7 @@ export class NexusRelayServer {
             code: 'RATE_LIMITED',
             message: 'Message rate limit exceeded. Please wait a moment.',
           }));
-          return;
+          return false;
         }
 
         // Forward encrypted ciphertext payload to peer verbatim
@@ -404,15 +414,15 @@ export class NexusRelayServer {
           ciphertext: msg.ciphertext,
           timestamp: msg.timestamp,
         });
-        break;
+        return true;
       }
 
       case 'typing': {
         const session = room.sessions.get(ws);
-        if (!session) return;
+        if (!session) return false;
 
         const now = Date.now();
-        if (now - session.lastTypingBroadcast < 1000) return;
+        if (now - session.lastTypingBroadcast < 1000) return false;
         session.lastTypingBroadcast = now;
 
         this.broadcastExcept(room, ws, {
@@ -420,7 +430,7 @@ export class NexusRelayServer {
           senderId: session.participant.id,
           isTyping: msg.isTyping,
         });
-        break;
+        return true;
       }
 
       case 'leave': {
@@ -439,8 +449,11 @@ export class NexusRelayServer {
             // ignore
           }
         }
-        break;
+        return true;
       }
+
+      default:
+        return false;
     }
   }
 
@@ -466,5 +479,24 @@ export class NexusRelayServer {
         }
       }
     }
+  }
+
+  /**
+   * Destroys all rooms, clears timers, and closes WebSocket server.
+   */
+  public destroy(): void {
+    for (const room of this.rooms.values()) {
+      if (room.timer) clearTimeout(room.timer);
+      for (const [ws] of room.sessions.entries()) {
+        try {
+          ws.close();
+        } catch {
+          // ignore
+        }
+      }
+      room.sessions.clear();
+    }
+    this.rooms.clear();
+    this.wss.close();
   }
 }

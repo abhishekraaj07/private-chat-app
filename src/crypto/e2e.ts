@@ -9,11 +9,20 @@
  * - Zero-knowledge relay: keys and plaintexts never leave the browser client
  */
 
-import { CryptoError, EncryptedPayload } from './types.ts';
+import { CryptoError, EncryptedPayload, AadMetadata } from './types.ts';
 
-const PROTOCOL_CONTEXT = 'NEXUS-E2E-v1-AES-GCM-256';
+export const PROTOCOL_CONTEXT = 'NEXUS-E2EE-v1';
 const AES_KEY_LENGTH = 256;
 const IV_LENGTH_BYTES = 12; // 96 bits recommended for AES-GCM
+
+/**
+ * Builds canonical deterministic AAD bytes for envelope authentication.
+ * Binds version, room, sender, message ID, sequence number, and type.
+ */
+export function buildCanonicalAad(meta: AadMetadata): Uint8Array {
+  const canonical = `NEXUS-v${meta.version}|${meta.roomCode}|${meta.senderId}|${meta.messageId}|${meta.seq ?? 0}|${meta.type || 'message'}`;
+  return new TextEncoder().encode(canonical);
+}
 
 /**
  * Encodes a Uint8Array into a standard Base64 string.
@@ -44,17 +53,38 @@ export function base64ToBytes(base64: string): Uint8Array {
 }
 
 /**
+ * Resolves the SubtleCrypto interface with descriptive environment verification.
+ */
+export function getSubtleCrypto(): SubtleCrypto {
+  const subtle = globalThis.crypto?.subtle;
+  if (!subtle) {
+    if (typeof window !== 'undefined' && !window.isSecureContext) {
+      throw new CryptoError(
+        'Web Crypto API is only enabled in Secure Contexts. Please open the app via http://localhost:3000 (or HTTPS), not an IP address.'
+      );
+    }
+    throw new CryptoError('Web Crypto API (subtle) is not available in this browser environment.');
+  }
+  return subtle;
+}
+
+/**
  * Generates an ephemeral ECDH keypair using P-256 curve.
+ * 
+ * SECURITY:
+ * The private key is strictly NON-EXTRACTABLE (extractable: false).
+ * In the Web Crypto API, the public key in a generated pair remains exportable for exchange,
+ * while the private key cannot be exported, inspected, or leaked.
  */
 export async function generateKeyPair(): Promise<CryptoKeyPair> {
   try {
-    const subtle = globalThis.crypto.subtle;
+    const subtle = getSubtleCrypto();
     return await subtle.generateKey(
       {
         name: 'ECDH',
         namedCurve: 'P-256',
       },
-      true, // extractable so public key can be exported
+      false, // non-extractable private key
       ['deriveKey', 'deriveBits']
     );
   } catch (err) {
@@ -67,7 +97,7 @@ export async function generateKeyPair(): Promise<CryptoKeyPair> {
  */
 export async function exportPublicKey(key: CryptoKey): Promise<JsonWebKey> {
   try {
-    const subtle = globalThis.crypto.subtle;
+    const subtle = getSubtleCrypto();
     const jwk = await subtle.exportKey('jwk', key);
     // Sanitize JWK to only include public attributes
     return {
@@ -90,7 +120,7 @@ export async function importPublicKey(jwk: JsonWebKey): Promise<CryptoKey> {
       throw new Error('Invalid JWK format: expected EC P-256 key');
     }
 
-    const subtle = globalThis.crypto.subtle;
+    const subtle = getSubtleCrypto();
     return await subtle.importKey(
       'jwk',
       {
@@ -115,9 +145,9 @@ export async function importPublicKey(jwk: JsonWebKey): Promise<CryptoKey> {
 /**
  * Derives a shared symmetric AES-GCM 256-bit encryption key using ECDH + HKDF-SHA-256.
  *
- * @param privateKey - Local participant's ECDH private key
+ * @param privateKey - Local participant's ECDH private key (non-extractable)
  * @param peerPublicKey - Remote participant's imported ECDH public key
- * @param contextInfo - Domain separation string (defaults to protocol version)
+ * @param contextInfo - Domain separation string (defaults to NEXUS-E2EE-v1)
  */
 export async function deriveSharedSecret(
   privateKey: CryptoKey,
@@ -125,7 +155,7 @@ export async function deriveSharedSecret(
   contextInfo: string = PROTOCOL_CONTEXT
 ): Promise<CryptoKey> {
   try {
-    const subtle = globalThis.crypto.subtle;
+    const subtle = getSubtleCrypto();
 
     // Step 1: Compute ECDH shared secret bits
     const sharedBits = await subtle.deriveBits(
@@ -173,25 +203,35 @@ export async function deriveSharedSecret(
 
 /**
  * Encrypts a plaintext string with AES-256-GCM using a freshly generated 96-bit IV.
+ * Optionally authenticates metadata using Additional Authenticated Data (AAD).
  */
 export async function encryptMessage(
   key: CryptoKey,
-  plaintext: string
+  plaintext: string,
+  aad?: Uint8Array | AadMetadata
 ): Promise<EncryptedPayload> {
   try {
-    const subtle = globalThis.crypto.subtle;
+    const subtle = getSubtleCrypto();
 
     // Generate fresh, cryptographically secure 96-bit (12-byte) IV
     const iv = new Uint8Array(IV_LENGTH_BYTES);
     globalThis.crypto.getRandomValues(iv);
 
     const encoded = new TextEncoder().encode(plaintext);
+    const additionalData = aad
+      ? aad instanceof Uint8Array
+        ? aad
+        : buildCanonicalAad(aad)
+      : undefined;
+
+    const algorithm: AesGcmParams = {
+      name: 'AES-GCM',
+      iv,
+      ...(additionalData ? { additionalData } : {}),
+    };
 
     const ciphertextBuffer = await subtle.encrypt(
-      {
-        name: 'AES-GCM',
-        iv,
-      },
+      algorithm,
       key,
       encoded
     );
@@ -207,14 +247,16 @@ export async function encryptMessage(
 
 /**
  * Decrypts an AES-256-GCM ciphertext payload. Fails safely if authentication fails.
+ * Verifies authenticated metadata (AAD) if supplied.
  */
 export async function decryptMessage(
   key: CryptoKey,
   ciphertextBase64: string,
-  ivBase64: string
+  ivBase64: string,
+  aad?: Uint8Array | AadMetadata
 ): Promise<string> {
   try {
-    const subtle = globalThis.crypto.subtle;
+    const subtle = getSubtleCrypto();
 
     const iv = base64ToBytes(ivBase64);
     if (iv.byteLength !== IV_LENGTH_BYTES) {
@@ -222,18 +264,33 @@ export async function decryptMessage(
     }
 
     const ciphertext = base64ToBytes(ciphertextBase64);
+    const additionalData = aad
+      ? aad instanceof Uint8Array
+        ? aad
+        : buildCanonicalAad(aad)
+      : undefined;
+
+    const algorithm: AesGcmParams = {
+      name: 'AES-GCM',
+      iv,
+      ...(additionalData ? { additionalData } : {}),
+    };
 
     const decryptedBuffer = await subtle.decrypt(
-      {
-        name: 'AES-GCM',
-        iv,
-      },
+      algorithm,
       key,
       ciphertext
     );
 
     return new TextDecoder().decode(decryptedBuffer);
   } catch (err) {
+    if (err instanceof CryptoError) {
+      throw err;
+    }
+    if (err instanceof Error && err.message.includes('Invalid IV length')) {
+      throw new CryptoError(err.message, err);
+    }
     throw new CryptoError('Decryption failed: integrity authentication mismatch or invalid key', err);
   }
 }
+

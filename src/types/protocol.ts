@@ -103,17 +103,135 @@ export interface EncryptedFileAttachment {
   dataUrl: string;
 }
 
+export interface ReplyReference {
+  id: string;
+  messageId?: string;
+  senderName: string;
+  text?: string;
+  snippet?: string;
+  isFile?: boolean;
+  fileName?: string;
+  isViewOnce?: boolean;
+}
+
+export type ReactionMap = Record<string, string[]>; // emoji -> array of participantIds
+
+export type MessageDeliveryStatus = 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
+
 export interface ChatMessage {
   id: string;
+  kind?: 'message';
   senderId: string;
   senderName: string;
   text?: string;
   attachment?: EncryptedFileAttachment;
   messageType?: 'text' | 'file';
   timestamp: number;
-  isOwn: boolean;
-  status: 'delivered' | 'failed';
+  isOwn?: boolean;
+  status?: MessageDeliveryStatus;
+  replyTo?: ReplyReference;
+  reactions?: ReactionMap;
+  isEdited?: boolean;
+  isDeleted?: boolean;
+  isViewOnce?: boolean;
+  isViewed?: boolean;
+  viewedAt?: number;
+  isVoiceNote?: boolean;
+  voiceDurationSec?: number;
+  isPinned?: boolean;
+  expiresAt?: number;
+  ttlMs?: number;
 }
+
+export type EncryptedV2Payload =
+  | {
+      version: 2;
+      kind: 'chat_message';
+      messageId: string;
+      text?: string;
+      attachment?: EncryptedFileAttachment;
+      replyTo?: ReplyReference;
+      isViewOnce?: boolean;
+      isVoiceNote?: boolean;
+      voiceDurationSec?: number;
+      ttlMs?: number;
+      expiresAt?: number;
+    }
+  | {
+      version: 2;
+      kind: 'reaction';
+      messageId: string;
+      emoji: string;
+      action: 'add' | 'remove';
+      participantId: string;
+    }
+  | {
+      version: 2;
+      kind: 'edit';
+      messageId: string;
+      newText: string;
+    }
+  | {
+      version: 2;
+      kind: 'delete';
+      messageId: string;
+      deleteType: 'everyone';
+    }
+  | {
+      version: 2;
+      kind: 'pin';
+      messageId: string;
+      isPinned: boolean;
+    }
+  | {
+      version: 2;
+      kind: 'view_once_opened';
+      messageId: string;
+      viewerId: string;
+    }
+  | {
+      version: 2;
+      kind: 'disappearing_timer';
+      ttlMs: number;
+      setBy: string;
+    }
+  | {
+      version: 2;
+      kind: 'delivery_ack';
+      messageId: string;
+      deliveredTo: string;
+      timestamp: number;
+    }
+  | {
+      version: 2;
+      kind: 'read_ack';
+      messageId: string;
+      readBy: string;
+      timestamp: number;
+    }
+  | {
+      version: 2;
+      kind: 'burn_room';
+      burnerId: string;
+      timestamp: number;
+    }
+  | {
+      version: 2;
+      kind: 'webrtc_signal';
+      signalType: 'offer' | 'answer' | 'ice_candidate' | 'hangup' | 'reject';
+      sdp?: string;
+      candidate?: RTCIceCandidateInit;
+      senderId: string;
+      timestamp: number;
+    };
+
+export interface EncryptedLegacyPayload {
+  type?: 'text' | 'file';
+  text?: string;
+  attachment?: EncryptedFileAttachment;
+}
+
+export type EncryptedInnerPayload = EncryptedV2Payload | EncryptedLegacyPayload;
 
 export interface SystemNotification {
   id: string;

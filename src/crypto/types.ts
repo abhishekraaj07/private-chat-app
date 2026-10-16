@@ -12,6 +12,15 @@ export interface KeyExchangePayload {
   publicKey: JsonWebKey;
 }
 
+export interface AadMetadata {
+  version: number;
+  roomCode: string;
+  senderId: string;
+  messageId: string;
+  seq?: number;
+  type?: string;
+}
+
 export class CryptoError extends Error {
   constructor(message: string, public readonly cause?: unknown) {
     super(message);

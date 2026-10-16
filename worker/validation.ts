@@ -15,11 +15,68 @@ export const MAX_USERNAME_LENGTH = 32;
 export const MIN_USERNAME_LENGTH = 1;
 export const MAX_CIPHERTEXT_LENGTH = 6 * 1024 * 1024; // 6 MB max encrypted message/file
 export const MAX_MESSAGE_ID_LENGTH = 64;
+export const MAX_PARTICIPANT_ID_LENGTH = 64;
+
+export const ALLOWED_ATTACHMENT_MIME_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'application/pdf',
+  'text/plain',
+  'audio/webm',
+  'audio/ogg',
+  'audio/mp4',
+  'audio/wav',
+  'audio/aac',
+  'audio/x-m4a',
+  'audio/m4a',
+];
+export const MAX_ATTACHMENT_SIZE_BYTES = 3 * 1024 * 1024; // 3 MB
 
 export interface ValidationResult<T = unknown> {
   valid: boolean;
   error?: string;
   sanitized?: T;
+}
+
+/**
+ * Validates that an object does not contain prototype pollution injection keys.
+ */
+export function isSafeObject(obj: unknown): boolean {
+  if (!obj || typeof obj !== 'object') return false;
+  if (Array.isArray(obj)) {
+    return obj.every((item) => (typeof item === 'object' && item !== null ? isSafeObject(item) : true));
+  }
+  if (
+    Object.prototype.hasOwnProperty.call(obj, '__proto__') ||
+    Object.prototype.hasOwnProperty.call(obj, 'constructor') ||
+    Object.prototype.hasOwnProperty.call(obj, 'prototype')
+  ) {
+    return false;
+  }
+  const proto = Object.getPrototypeOf(obj);
+  if (proto !== Object.prototype && proto !== null) {
+    return false;
+  }
+  for (const key of Object.keys(obj)) {
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+      return false;
+    }
+    const val = (obj as Record<string, unknown>)[key];
+    if (typeof val === 'object' && val !== null) {
+      if (!isSafeObject(val)) return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * Validates allowed attachment MIME types.
+ */
+export function isAllowedAttachmentMime(type: string | undefined): boolean {
+  if (!type || typeof type !== 'string') return false;
+  return ALLOWED_ATTACHMENT_MIME_TYPES.includes(type.trim().toLowerCase());
 }
 
 /**
@@ -100,8 +157,8 @@ export function validateMessagePayload(payload: unknown): ValidationResult<{
   ciphertext: string;
   timestamp: number;
 }> {
-  if (!payload || typeof payload !== 'object') {
-    return { valid: false, error: 'Message payload must be an object' };
+  if (!isSafeObject(payload)) {
+    return { valid: false, error: 'Message payload must be a valid safe object' };
   }
 
   const p = payload as Record<string, unknown>;
@@ -147,8 +204,8 @@ export function validateMessagePayload(payload: unknown): ValidationResult<{
  * Validates any incoming raw client message against the NEXUS WebSocket protocol.
  */
 export function validateClientMessage(raw: unknown): ValidationResult<ClientMessage> {
-  if (!raw || typeof raw !== 'object') {
-    return { valid: false, error: 'Message must be a valid JSON object' };
+  if (!isSafeObject(raw)) {
+    return { valid: false, error: 'Message must be a valid safe object' };
   }
 
   const msg = raw as Record<string, unknown>;
@@ -189,8 +246,8 @@ export function validateClientMessage(raw: unknown): ValidationResult<ClientMess
       const keyCheck = validatePublicKeyJwk(msg.publicKey);
       if (!keyCheck.valid) return { valid: false, error: keyCheck.error };
 
-      if (typeof msg.senderId !== 'string' || !msg.senderId) {
-        return { valid: false, error: 'Missing senderId' };
+      if (typeof msg.senderId !== 'string' || !msg.senderId || msg.senderId.length > MAX_PARTICIPANT_ID_LENGTH) {
+        return { valid: false, error: 'Invalid or missing senderId' };
       }
 
       return {
@@ -211,8 +268,8 @@ export function validateClientMessage(raw: unknown): ValidationResult<ClientMess
       const payloadCheck = validateMessagePayload(msg);
       if (!payloadCheck.valid) return { valid: false, error: payloadCheck.error };
 
-      if (typeof msg.senderId !== 'string' || !msg.senderId) {
-        return { valid: false, error: 'Missing senderId' };
+      if (typeof msg.senderId !== 'string' || !msg.senderId || msg.senderId.length > MAX_PARTICIPANT_ID_LENGTH) {
+        return { valid: false, error: 'Invalid or missing senderId' };
       }
 
       return {
@@ -233,8 +290,8 @@ export function validateClientMessage(raw: unknown): ValidationResult<ClientMess
       const roomCheck = validateRoomCode(msg.roomCode);
       if (!roomCheck.valid) return { valid: false, error: roomCheck.error };
 
-      if (typeof msg.senderId !== 'string' || !msg.senderId) {
-        return { valid: false, error: 'Missing senderId' };
+      if (typeof msg.senderId !== 'string' || !msg.senderId || msg.senderId.length > MAX_PARTICIPANT_ID_LENGTH) {
+        return { valid: false, error: 'Invalid or missing senderId' };
       }
 
       return {
@@ -252,8 +309,8 @@ export function validateClientMessage(raw: unknown): ValidationResult<ClientMess
       const roomCheck = validateRoomCode(msg.roomCode);
       if (!roomCheck.valid) return { valid: false, error: roomCheck.error };
 
-      if (typeof msg.senderId !== 'string' || !msg.senderId) {
-        return { valid: false, error: 'Missing senderId' };
+      if (typeof msg.senderId !== 'string' || !msg.senderId || msg.senderId.length > MAX_PARTICIPANT_ID_LENGTH) {
+        return { valid: false, error: 'Invalid or missing senderId' };
       }
 
       return {

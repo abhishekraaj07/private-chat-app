@@ -20,11 +20,12 @@ import {
   encryptMessage,
   decryptMessage,
 } from '../crypto/e2e.ts';
-import { EncryptedPayload } from '../crypto/types.ts';
+import { EncryptedPayload, AadMetadata } from '../crypto/types.ts';
 
 export interface CryptoSessionState {
   isKeyReady: boolean;
   isEncrypted: boolean;
+  isPeerVerified: boolean;
   fingerprint: string | null;
   publicKeyJwk: JsonWebKey | null;
 }
@@ -33,6 +34,7 @@ export function useCryptoSession() {
   const [state, setState] = useState<CryptoSessionState>({
     isKeyReady: false,
     isEncrypted: false,
+    isPeerVerified: false,
     fingerprint: null,
     publicKeyJwk: null,
   });
@@ -40,6 +42,7 @@ export function useCryptoSession() {
   const keyPairRef = useRef<CryptoKeyPair | null>(null);
   const sharedKeyRef = useRef<CryptoKey | null>(null);
   const peerKeyRef = useRef<CryptoKey | null>(null);
+  const publicKeyJwkRef = useRef<JsonWebKey | null>(null);
 
   /**
    * Initializes local ephemeral ECDH keypair and prepares public key for exchange.
@@ -49,6 +52,7 @@ export function useCryptoSession() {
     keyPairRef.current = keyPair;
 
     const jwk = await exportPublicKey(keyPair.publicKey);
+    publicKeyJwkRef.current = jwk;
 
     setState((prev) => ({
       ...prev,
@@ -76,11 +80,15 @@ export function useCryptoSession() {
     );
     sharedKeyRef.current = sharedKey;
 
-    // Calculate a deterministic session fingerprint from both public keys for the inspector
+    // Calculate a deterministic, canonical session fingerprint identical on both clients
     let fingerprint = 'E2E-ACTIVE';
     try {
-      const myJwk = state.publicKeyJwk;
-      const combined = `${myJwk?.x || ''}:${myJwk?.y || ''}:${peerJwk.x || ''}:${peerJwk.y || ''}`;
+      const myJwk = publicKeyJwkRef.current || state.publicKeyJwk;
+      const keyA = `${myJwk?.x || ''}:${myJwk?.y || ''}`;
+      const keyB = `${peerJwk.x || ''}:${peerJwk.y || ''}`;
+      // Canonical sorting ensures both participants calculate the exact same hash
+      const combined = keyA < keyB ? `${keyA}|${keyB}` : `${keyB}|${keyA}`;
+
       const hashBuffer = await globalThis.crypto.subtle.digest(
         'SHA-256',
         new TextEncoder().encode(combined)
@@ -95,28 +103,39 @@ export function useCryptoSession() {
     setState((prev) => ({
       ...prev,
       isEncrypted: true,
+      isPeerVerified: false,
       fingerprint,
     }));
   }, [state.publicKeyJwk]);
 
   /**
-   * Encrypts plaintext message with the derived AES-256-GCM key.
+   * Explicit user verification of peer's session fingerprint out-of-band.
    */
-  const encrypt = useCallback(async (plaintext: string): Promise<EncryptedPayload> => {
-    if (!sharedKeyRef.current) {
-      throw new Error('E2E session not established yet');
-    }
-    return await encryptMessage(sharedKeyRef.current, plaintext);
+  const setPeerVerified = useCallback((verified: boolean) => {
+    setState((prev) => ({
+      ...prev,
+      isPeerVerified: verified,
+    }));
   }, []);
 
   /**
-   * Decrypts incoming ciphertext message with the derived AES-256-GCM key.
+   * Encrypts plaintext message with the derived AES-256-GCM key and optional AAD.
    */
-  const decrypt = useCallback(async (ciphertext: string, iv: string): Promise<string> => {
+  const encrypt = useCallback(async (plaintext: string, aad?: Uint8Array | AadMetadata): Promise<EncryptedPayload> => {
     if (!sharedKeyRef.current) {
       throw new Error('E2E session not established yet');
     }
-    return await decryptMessage(sharedKeyRef.current, ciphertext, iv);
+    return await encryptMessage(sharedKeyRef.current, plaintext, aad);
+  }, []);
+
+  /**
+   * Decrypts incoming ciphertext message with the derived AES-256-GCM key and optional AAD.
+   */
+  const decrypt = useCallback(async (ciphertext: string, iv: string, aad?: Uint8Array | AadMetadata): Promise<string> => {
+    if (!sharedKeyRef.current) {
+      throw new Error('E2E session not established yet');
+    }
+    return await decryptMessage(sharedKeyRef.current, ciphertext, iv, aad);
   }, []);
 
   /**
@@ -129,6 +148,7 @@ export function useCryptoSession() {
     setState({
       isKeyReady: false,
       isEncrypted: false,
+      isPeerVerified: false,
       fingerprint: null,
       publicKeyJwk: null,
     });
@@ -137,8 +157,10 @@ export function useCryptoSession() {
   return {
     isKeyReady: state.isKeyReady,
     isEncrypted: state.isEncrypted,
+    isPeerVerified: state.isPeerVerified,
     fingerprint: state.fingerprint,
     publicKeyJwk: state.publicKeyJwk,
+    setPeerVerified,
     initializeSession,
     handlePeerPublicKey,
     encrypt,
@@ -146,3 +168,4 @@ export function useCryptoSession() {
     resetCrypto,
   };
 }
+

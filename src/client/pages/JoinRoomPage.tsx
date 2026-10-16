@@ -5,7 +5,7 @@
  * and enters the encrypted session.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, Shield, AlertCircle, Loader2 } from 'lucide-react';
 import { normalizeRoomCode, isValidRoomCode, ROOM_CODE_CHARSET } from '../../utils/room-code.ts';
 import { getRoomInfo } from '../../services/api.ts';
@@ -13,16 +13,24 @@ import { getRoomInfo } from '../../services/api.ts';
 interface JoinRoomPageProps {
   onBack: () => void;
   onJoinRoom: (roomCode: string, displayName: string) => void;
+  initialRoomCode?: string;
 }
 
 export const JoinRoomPage: React.FC<JoinRoomPageProps> = ({
   onBack,
   onJoinRoom,
+  initialRoomCode,
 }) => {
-  const [code, setCode] = useState('');
+  const [code, setCode] = useState(initialRoomCode ? normalizeRoomCode(initialRoomCode) : '');
   const [displayName, setDisplayName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
+
+  useEffect(() => {
+    if (initialRoomCode) {
+      setCode(normalizeRoomCode(initialRoomCode));
+    }
+  }, [initialRoomCode]);
 
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value;

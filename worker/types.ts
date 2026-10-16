@@ -35,6 +35,7 @@ export interface DurableObjectNamespace {
 
 export interface Env {
   ROOMS: DurableObjectNamespace;
+  ASSETS?: { fetch: (request: Request) => Promise<Response> };
   ENVIRONMENT?: string;
   INACTIVITY_TIMEOUT_MS?: string;
   CORS_ALLOW_ORIGIN?: string;

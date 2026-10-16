@@ -10,7 +10,10 @@ import { JoinRoomPage } from './client/pages/JoinRoomPage.tsx';
 import { ChatRoomPage } from './client/pages/ChatRoomPage.tsx';
 import { SecurityModal } from './client/components/SecurityModal.tsx';
 import { AboutModal } from './client/components/AboutModal.tsx';
+import { GuideModal } from './client/components/GuideModal.tsx';
+import { FaqModal } from './client/components/FaqModal.tsx';
 import { normalizeRoomCode, isValidRoomCode } from './utils/room-code.ts';
+import { setupPanicHotkeys } from './client/utils/duressWipe.ts';
 
 type AppView = 'landing' | 'create' | 'join' | 'chat';
 
@@ -21,9 +24,13 @@ export default function App() {
   const [participantId, setParticipantId] = useState<string>('');
   const [isSecurityOpen, setIsSecurityOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const [isFaqOpen, setIsFaqOpen] = useState(false);
 
-  // Generate ephemeral participant ID for this browser tab
+  // Setup Panic/Duress Hotkey (Ctrl+Alt+Q) & participant ID
   useEffect(() => {
+    const cleanupPanic = setupPanicHotkeys();
+
     let id = '';
     if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
       id = crypto.randomUUID();
@@ -34,9 +41,25 @@ export default function App() {
     }
     setParticipantId(id);
 
-    // Check URL parameters for direct room code joining (e.g., /?room=K7M4PX or #K7M4PX)
+    // Check URL parameters for direct room code joining (e.g., /?room=K7M4PX, #join=K7M4PX, #K7M4PX, or /K7M4PX)
     const searchParams = new URLSearchParams(window.location.search);
-    const urlRoom = searchParams.get('room') || window.location.hash.replace(/^#/, '');
+    const pathParts = window.location.pathname.replace(/^\/+|\/+$/g, '').split('/');
+    const pathCandidate = pathParts.length === 1 && pathParts[0] ? pathParts[0] : (pathParts[0] === 'room' ? pathParts[1] : '');
+
+    let urlRoom = searchParams.get('room') || searchParams.get('join') || '';
+    const hash = window.location.hash.replace(/^#/, '');
+    if (!urlRoom && hash) {
+      if (hash.includes('=')) {
+        const hashParams = new URLSearchParams(hash);
+        urlRoom = hashParams.get('join') || hashParams.get('room') || '';
+      } else {
+        urlRoom = hash;
+      }
+    }
+    if (!urlRoom && pathCandidate) {
+      urlRoom = pathCandidate;
+    }
+
     if (urlRoom) {
       const normalized = normalizeRoomCode(urlRoom);
       if (isValidRoomCode(normalized)) {
@@ -44,6 +67,10 @@ export default function App() {
         setView('join');
       }
     }
+
+    return () => {
+      cleanupPanic();
+    };
   }, []);
 
   const handleEnterRoom = (code: string, name: string) => {
@@ -69,6 +96,8 @@ export default function App() {
           onJoinRoom={() => setView('join')}
           onOpenSecurity={() => setIsSecurityOpen(true)}
           onOpenAbout={() => setIsAboutOpen(true)}
+          onOpenGuide={() => setIsGuideOpen(true)}
+          onOpenFaq={() => setIsFaqOpen(true)}
         />
       )}
 
@@ -81,6 +110,7 @@ export default function App() {
 
       {view === 'join' && (
         <JoinRoomPage
+          initialRoomCode={roomCode}
           onBack={() => setView('landing')}
           onJoinRoom={handleEnterRoom}
         />
@@ -103,6 +133,16 @@ export default function App() {
       <AboutModal
         isOpen={isAboutOpen}
         onClose={() => setIsAboutOpen(false)}
+      />
+
+      <GuideModal
+        isOpen={isGuideOpen}
+        onClose={() => setIsGuideOpen(false)}
+      />
+
+      <FaqModal
+        isOpen={isFaqOpen}
+        onClose={() => setIsFaqOpen(false)}
       />
     </div>
   );

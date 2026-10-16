@@ -5,6 +5,8 @@ import {
   validateMessagePayload,
   validateClientMessage,
   validatePublicKeyJwk,
+  isSafeObject,
+  isAllowedAttachmentMime,
 } from '../worker/validation.ts';
 
 describe('Server-Side Protocol & Input Validation', () => {
@@ -127,6 +129,68 @@ describe('Server-Side Protocol & Input Validation', () => {
     it('rejects unknown message type', () => {
       const res = validateClientMessage({ type: 'hack' });
       expect(res.valid).toBe(false);
+    });
+  });
+
+  describe('isSafeAttachmentUrl sanitization', () => {
+    // Dynamic import to test client-side sanitization helper
+    it('accepts safe image data URLs and blob URIs', async () => {
+      const { isSafeAttachmentUrl } = await import('../src/hooks/useRoomSocket.ts');
+      expect(isSafeAttachmentUrl('blob:http://localhost:5173/1234-5678')).toBe(true);
+      expect(isSafeAttachmentUrl('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAE=')).toBe(true);
+      expect(isSafeAttachmentUrl('data:image/jpeg;base64,/9j/4AAQSkZJRg==')).toBe(true);
+      expect(isSafeAttachmentUrl('data:application/pdf;base64,JVBERi0xLjc=')).toBe(true);
+    });
+
+    it('rejects dangerous execution schemes and HTML data URLs', async () => {
+      const { isSafeAttachmentUrl } = await import('../src/hooks/useRoomSocket.ts');
+      expect(isSafeAttachmentUrl('javascript:alert(document.cookie)')).toBe(false);
+      expect(isSafeAttachmentUrl('JAVASCRIPT:alert(1)')).toBe(false);
+      expect(isSafeAttachmentUrl('vbscript:msgbox(1)')).toBe(false);
+      expect(isSafeAttachmentUrl('data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==')).toBe(false);
+      expect(isSafeAttachmentUrl('data:application/xhtml+xml;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==')).toBe(false);
+      expect(isSafeAttachmentUrl('https://evil.com/malware.exe')).toBe(false);
+      expect(isSafeAttachmentUrl('')).toBe(false);
+      expect(isSafeAttachmentUrl(undefined)).toBe(false);
+    });
+  });
+
+  describe('Prototype Pollution Protection (isSafeObject)', () => {
+    it('accepts safe flat objects', () => {
+      expect(isSafeObject({ a: 1, b: 'test' })).toBe(true);
+      expect(isSafeObject({})).toBe(true);
+    });
+
+    it('rejects objects with polluted keys', () => {
+      expect(isSafeObject({ __proto__: { admin: true } })).toBe(false);
+      expect(isSafeObject({ constructor: 'malicious' })).toBe(false);
+      expect(isSafeObject({ prototype: 'bad' })).toBe(false);
+    });
+
+    it('rejects nested polluted objects', () => {
+      expect(isSafeObject({ safe: { __proto__: {} } })).toBe(false);
+      expect(isSafeObject({ nested: [{ constructor: {} }] })).toBe(false);
+    });
+  });
+
+  describe('Attachment MIME Whitelist (isAllowedAttachmentMime)', () => {
+    it('accepts whitelisted media formats', () => {
+      expect(isAllowedAttachmentMime('image/jpeg')).toBe(true);
+      expect(isAllowedAttachmentMime('image/png')).toBe(true);
+      expect(isAllowedAttachmentMime('image/webp')).toBe(true);
+      expect(isAllowedAttachmentMime('image/gif')).toBe(true);
+      expect(isAllowedAttachmentMime('application/pdf')).toBe(true);
+      expect(isAllowedAttachmentMime('text/plain')).toBe(true);
+    });
+
+    it('rejects dangerous and executable types', () => {
+      expect(isAllowedAttachmentMime('text/html')).toBe(false);
+      expect(isAllowedAttachmentMime('image/svg+xml')).toBe(false);
+      expect(isAllowedAttachmentMime('application/javascript')).toBe(false);
+      expect(isAllowedAttachmentMime('application/x-msdownload')).toBe(false);
+      expect(isAllowedAttachmentMime('application/octet-stream')).toBe(false);
+      expect(isAllowedAttachmentMime('')).toBe(false);
+      expect(isAllowedAttachmentMime(undefined as unknown as string)).toBe(false);
     });
   });
 });
