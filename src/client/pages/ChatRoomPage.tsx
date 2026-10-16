@@ -353,7 +353,7 @@ export const ChatRoomPage: React.FC<ChatRoomPageProps> = ({
     <ToastProvider>
       <div
         id="chat-room-container"
-        className="flex flex-col h-[100dvh] w-full bg-transparent text-[#EDEDED] overflow-hidden relative"
+        className="flex flex-col h-[100dvh] w-full bg-[#08090B] text-[#EDEDED] overflow-hidden"
       >
         {/* Top Header */}
         <Header
@@ -446,11 +446,9 @@ export const ChatRoomPage: React.FC<ChatRoomPageProps> = ({
             status === 'connected' &&
             filteredTimeline.filter((i) => i.kind === 'message').length === 0 && (
               <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
-                <div className="pointer-events-auto mx-4 w-full max-w-sm text-center space-y-5 px-6 py-8 rounded-3xl glass-card border border-white/12 shadow-2xl relative overflow-hidden">
-                  {/* Subtle glass ambient glow */}
-                  <div className="absolute -top-10 -right-10 w-28 h-28 rounded-full bg-[#38BDF8]/12 blur-xl pointer-events-none"></div>
-                  <div className="flex flex-col items-center gap-3 relative z-10">
-                    <div className="w-14 h-14 rounded-2xl glass-panel border border-white/15 flex items-center justify-center shadow-lg">
+                <div className="pointer-events-auto mx-4 w-full max-w-sm text-center space-y-5 px-6 py-8 rounded-2xl bg-[#0D0F12]/90 border border-[#1F242D] shadow-xl backdrop-blur-sm">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-14 h-14 rounded-2xl bg-[#111318] border border-[#1F242D] flex items-center justify-center shadow-md">
                       <Lock className="w-6 h-6 text-[#38BDF8]" />
                     </div>
                     <div>
@@ -464,12 +462,12 @@ export const ChatRoomPage: React.FC<ChatRoomPageProps> = ({
                   </div>
 
                   {/* Room Code display */}
-                  <div className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl glass-panel border border-white/15 font-mono text-xl font-bold tracking-widest text-[#EDEDED] select-all shadow-inner relative z-10">
+                  <div className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#111318] border border-[#1F242D] font-mono text-lg font-bold tracking-widest text-[#EDEDED] select-all">
                     {roomCode}
                   </div>
 
                   {/* Copy buttons */}
-                  <div className="flex gap-2 relative z-10">
+                  <div className="flex gap-2">
                     <button
                       type="button"
                       onClick={async () => {
@@ -479,10 +477,10 @@ export const ChatRoomPage: React.FC<ChatRoomPageProps> = ({
                           setTimeout(() => setWaitCopiedCode(false), 2000);
                         }
                       }}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl glass-btn-secondary text-xs font-mono text-[#EDEDED] transition-colors cursor-pointer"
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-[#111318] hover:bg-[#1F242D] border border-[#1F242D] hover:border-[#38BDF8]/40 text-xs font-mono text-[#EDEDED] transition-colors cursor-pointer"
                     >
                       {waitCopiedCode ? (
-                        <><CheckIcon className="w-3.5 h-3.5 text-emerald-400" /><span className="text-emerald-400 font-semibold">Copied!</span></>
+                        <><CheckIcon className="w-3.5 h-3.5 text-emerald-400" /><span className="text-emerald-400">Copied!</span></>
                       ) : (
                         <><Copy className="w-3.5 h-3.5 text-[#8A909E]" /><span>Copy code</span></>
                       )}
@@ -497,10 +495,10 @@ export const ChatRoomPage: React.FC<ChatRoomPageProps> = ({
                           setTimeout(() => setWaitCopiedLink(false), 2000);
                         }
                       }}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl glass-btn-secondary text-xs font-mono text-[#EDEDED] transition-colors cursor-pointer"
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-[#111318] hover:bg-[#1F242D] border border-[#1F242D] hover:border-[#38BDF8]/40 text-xs font-mono text-[#EDEDED] transition-colors cursor-pointer"
                     >
                       {waitCopiedLink ? (
-                        <><CheckIcon className="w-3.5 h-3.5 text-emerald-400" /><span className="text-emerald-400 font-semibold">Copied!</span></>
+                        <><CheckIcon className="w-3.5 h-3.5 text-emerald-400" /><span className="text-emerald-400">Copied!</span></>
                       ) : (
                         <><Copy className="w-3.5 h-3.5 text-[#8A909E]" /><span>Copy link</span></>
                       )}

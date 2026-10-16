@@ -126,22 +126,18 @@ export const CreateRoomPage: React.FC<CreateRoomPageProps> = ({
       </div>
 
       {/* Main Card */}
-      <main className="max-w-md w-full mx-auto my-auto p-6 sm:p-8 rounded-3xl glass-card space-y-6 shadow-2xl relative overflow-hidden">
-        {/* Glow accents */}
-        <div className="absolute -top-12 -right-12 w-32 h-32 rounded-full bg-[#38BDF8]/12 blur-2xl pointer-events-none"></div>
-        <div className="absolute -bottom-12 -left-12 w-32 h-32 rounded-full bg-purple-500/12 blur-2xl pointer-events-none"></div>
-
+      <main className="max-w-md w-full mx-auto my-auto p-6 sm:p-8 rounded-2xl bg-[#0D0F12] border border-[#1F242D] space-y-6 shadow-xl">
         {isCreating ? (
-          <div className="py-12 flex flex-col items-center justify-center space-y-3 relative z-10">
+          <div className="py-12 flex flex-col items-center justify-center space-y-3">
             <Loader2 className="w-6 h-6 text-[#38BDF8] animate-spin" />
             <p className="text-xs font-mono text-[#8A909E]">Generating cryptographic room...</p>
           </div>
         ) : error ? (
-          <div className="py-8 text-center space-y-4 relative z-10">
+          <div className="py-8 text-center space-y-4">
             <p className="text-sm text-rose-400 font-mono">{error}</p>
             <button
               onClick={() => window.location.reload()}
-              className="px-4 py-2 glass-panel rounded-lg text-xs font-mono text-[#EDEDED]"
+              className="px-4 py-2 bg-[#111318] border border-[#1F242D] rounded-lg text-xs font-mono text-[#EDEDED]"
             >
               Try Again
             </button>
@@ -154,14 +150,14 @@ export const CreateRoomPage: React.FC<CreateRoomPageProps> = ({
                 PRIVATE ROOM
               </span>
               <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
-                <div className="px-5 py-2.5 glass-panel rounded-xl font-mono text-2xl font-bold tracking-widest text-[#EDEDED] select-all border border-white/15 shadow-inner">
+                <div className="px-4 py-2 bg-[#111318] border border-[#1F242D] rounded-xl font-mono text-2xl font-bold tracking-widest text-[#EDEDED] select-all">
                   {roomCode}
                 </div>
                 <div className="flex items-center gap-1.5">
                   <button
                     id="create-room-copy-btn"
                     onClick={handleCopy}
-                    className="p-3 rounded-xl glass-btn-secondary text-xs font-mono text-[#EDEDED] transition-colors cursor-pointer"
+                    className="p-3 rounded-xl bg-[#111318] hover:bg-[#1F242D] border border-[#1F242D] text-xs font-mono text-[#EDEDED] transition-colors cursor-pointer"
                     title="Copy room code"
                   >
                     {copied ? (
@@ -174,13 +170,13 @@ export const CreateRoomPage: React.FC<CreateRoomPageProps> = ({
                   <button
                     id="create-room-copy-link-btn"
                     onClick={handleCopyLink}
-                    className="px-3.5 py-3 rounded-xl glass-btn-secondary text-xs font-mono text-[#EDEDED] transition-colors cursor-pointer flex items-center gap-1.5"
+                    className="px-3 py-2.5 rounded-xl bg-[#111318] hover:bg-[#1F242D] border border-[#1F242D] text-xs font-mono text-[#EDEDED] transition-colors cursor-pointer flex items-center gap-1.5"
                     title="Copy direct invite link"
                   >
                     {copiedLink ? (
                       <>
                         <Check className="w-3.5 h-3.5 text-emerald-400" />
-                        <span className="text-emerald-400 font-semibold">Copied</span>
+                        <span className="text-emerald-400">Copied</span>
                       </>
                     ) : (
                       <>
@@ -203,7 +199,7 @@ export const CreateRoomPage: React.FC<CreateRoomPageProps> = ({
                   htmlFor="create-display-name-input"
                   className="block text-xs font-mono text-[#8A909E]"
                 >
-                  Your alias
+                  Your name
                 </label>
                 <input
                   id="create-display-name-input"
@@ -212,21 +208,21 @@ export const CreateRoomPage: React.FC<CreateRoomPageProps> = ({
                   placeholder="e.g. Alex"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  className="w-full px-4 py-3 glass-input rounded-xl text-sm text-[#EDEDED] placeholder-[#8A909E]/50 focus:outline-none transition-all"
+                  className="w-full px-3.5 py-2.5 bg-[#111318] border border-[#1F242D] focus:border-[#38BDF8]/60 rounded-xl text-sm text-[#EDEDED] placeholder-[#8A909E]/50 focus:outline-none transition-colors"
                 />
               </div>
 
               {/* Status Indicator */}
               <div className="py-2 flex items-center justify-center">
                 {participantCount >= 2 ? (
-                  <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/50 border border-emerald-500/30 text-xs font-mono text-emerald-300">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/40 border border-emerald-800/40 text-xs font-mono text-emerald-400">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                     2 PARTICIPANTS CONNECTED
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full glass-panel text-xs font-mono text-amber-300 border border-amber-400/20">
+                  <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#111318] border border-[#1F242D] text-xs font-mono text-amber-400">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
-                    WAITING FOR PEER
+                    WAITING FOR CONNECTION
                   </span>
                 )}
               </div>
@@ -235,10 +231,10 @@ export const CreateRoomPage: React.FC<CreateRoomPageProps> = ({
               <button
                 id="create-room-enter-btn"
                 type="submit"
-                className="w-full py-3.5 px-4 rounded-xl glass-btn-primary font-semibold text-slate-900 transition-all flex items-center justify-center gap-2 group cursor-pointer shadow-lg"
+                className="w-full py-3 px-4 rounded-xl bg-[#111318] hover:bg-[#1F242D] border border-[#1F242D] hover:border-[#38BDF8]/50 text-sm font-medium text-[#EDEDED] transition-all flex items-center justify-center gap-2 group cursor-pointer shadow-xs"
               >
                 <span>Enter conversation</span>
-                <ArrowRight className="w-4 h-4 text-slate-900 group-hover:translate-x-0.5 transition-transform" />
+                <ArrowRight className="w-4 h-4 text-[#38BDF8] group-hover:translate-x-0.5 transition-transform" />
               </button>
             </form>
           </>

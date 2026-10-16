@@ -177,7 +177,7 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header
       id="nexus-header"
-      className="border-b border-white/10 bg-[#0E121B]/70 backdrop-blur-xl px-3 sm:px-4 lg:px-6 z-30 shrink-0 select-none relative shadow-md"
+      className="border-b border-[#1F242D] bg-[#08090B]/95 backdrop-blur-md px-3 sm:px-4 lg:px-6 z-30 shrink-0 select-none relative"
       style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
     >
       <div className="h-14 flex items-center justify-between gap-2">
@@ -185,20 +185,20 @@ export const Header: React.FC<HeaderProps> = ({
         {/* ── LEFT: Unified Shield + NEXUS Brand + Interactive Room Code + Presence ── */}
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           {/* Unified NEXUS Brand Element */}
-          <div className="h-8 flex items-center gap-2 px-2.5 py-1 rounded-lg glass-panel border border-white/15 shrink-0 select-none shadow-sm">
+          <div className="h-8 flex items-center gap-2 px-2 py-1 rounded-lg bg-[#111318] border border-[#1F242D] shrink-0 select-none shadow-xs">
             <Shield className="w-3.5 h-3.5 text-[#38BDF8]" />
             <span className="font-mono text-xs sm:text-sm font-bold tracking-wider text-[#EDEDED]">
               NEXUS
             </span>
           </div>
 
-          <div className="h-4 w-[1px] bg-white/10 hidden sm:block"></div>
+          <div className="h-4 w-[1px] bg-[#1F242D] hidden sm:block"></div>
 
           {/* Interactive Room Code Badge (Click to copy) */}
           <button
             type="button"
             onClick={handleCopy}
-            className="h-8 flex items-center gap-1.5 px-2.5 py-1 rounded-lg glass-btn-secondary border border-white/10 transition-colors shrink-0 cursor-pointer group"
+            className="h-8 flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[#111318] hover:bg-[#1A1E26] border border-[#1F242D] hover:border-[#38BDF8]/40 transition-colors shrink-0 cursor-pointer group"
             title="Click to copy room code"
             aria-label={`Copy room code ${roomCode}`}
           >

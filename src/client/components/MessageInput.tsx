@@ -346,8 +346,8 @@ export const MessageInput: React.FC<MessageInputProps> = ({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`px-2 pt-2 sm:px-4 sm:pt-3 border-t border-white/10 bg-[#0E121B]/65 backdrop-blur-xl shrink-0 transition-colors ${
-        isDragging ? 'bg-[#38BDF8]/10 border-[#38BDF8]/60' : ''
+      className={`px-2 pt-2 sm:px-4 sm:pt-3 border-t border-[#1F242D] bg-[#08090B]/90 backdrop-blur-md shrink-0 transition-colors ${
+        isDragging ? 'bg-[#38BDF8]/5 border-[#38BDF8]/60' : ''
       }`}
       style={{ paddingBottom: 'max(8px, env(safe-area-inset-bottom, 8px))' }}
     >
@@ -535,14 +535,14 @@ export const MessageInput: React.FC<MessageInputProps> = ({
             </div>
           </div>
         ) : (
-          <div className="relative flex items-end gap-2 glass-input border border-white/12 focus-within:border-[#38BDF8]/60 rounded-2xl p-2.5 transition-all shadow-lg">
+          <div className="relative flex items-end gap-2 bg-[#0D0F12] border border-[#1F242D] focus-within:border-[#38BDF8]/60 rounded-xl p-2 transition-all">
             {/* File Attachment Trigger Button */}
             <button
               id="attach-file-btn"
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={disabled || Boolean(editingMessage)}
-              className="p-2 rounded-xl glass-btn-secondary text-[#8A909E] hover:text-[#38BDF8] border border-white/10 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+              className="p-2 rounded-lg bg-[#111318] hover:bg-[#1F242D] text-[#8A909E] hover:text-[#38BDF8] border border-[#1F242D] hover:border-[#38BDF8]/40 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
               title="Attach encrypted file (drag & drop or click, max 3MB)"
             >
               <Paperclip className="w-4 h-4" />
@@ -585,7 +585,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                   type="button"
                   onClick={startRecording}
                   disabled={disabled}
-                  className="p-2 rounded-xl glass-btn-secondary text-cyan-400 hover:text-cyan-300 border border-white/10 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                  className="p-2 rounded-lg bg-[#111318] hover:bg-[#1F242D] text-cyan-400 hover:text-cyan-300 border border-[#1F242D] hover:border-cyan-500/40 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
                   title="Record encrypted voice note"
                   aria-label="Record voice note"
                 >
@@ -600,13 +600,13 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                   type="button"
                   onClick={handleSend}
                   disabled={!canSend}
-                  className="p-2.5 rounded-xl glass-btn-primary text-slate-900 transition-all cursor-pointer disabled:cursor-not-allowed shadow-md shrink-0 flex items-center justify-center font-bold"
+                  className="p-2 rounded-lg bg-[#111318] hover:bg-[#1F242D] text-[#EDEDED] disabled:text-[#8A909E]/40 disabled:hover:bg-[#111318] border border-[#1F242D] disabled:border-transparent transition-all cursor-pointer disabled:cursor-not-allowed shadow-xs shrink-0"
                   title={editingMessage ? 'Save edit' : 'Send encrypted message'}
                 >
                   {editingMessage ? (
-                    <Check className="w-4 h-4 text-slate-900" />
+                    <Check className="w-4 h-4 text-[#38BDF8]" />
                   ) : (
-                    <Send className="w-4 h-4 text-slate-900" />
+                    <Send className="w-4 h-4 text-[#38BDF8]" />
                   )}
                 </button>
               )}

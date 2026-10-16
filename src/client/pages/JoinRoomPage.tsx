@@ -124,12 +124,8 @@ export const JoinRoomPage: React.FC<JoinRoomPageProps> = ({
       </div>
 
       {/* Card */}
-      <main className="max-w-md w-full mx-auto my-auto p-6 sm:p-8 rounded-3xl glass-card space-y-6 shadow-2xl relative overflow-hidden">
-        {/* Glow accents */}
-        <div className="absolute -top-12 -right-12 w-32 h-32 rounded-full bg-[#38BDF8]/12 blur-2xl pointer-events-none"></div>
-        <div className="absolute -bottom-12 -left-12 w-32 h-32 rounded-full bg-purple-500/12 blur-2xl pointer-events-none"></div>
-
-        <div className="text-center space-y-1 relative z-10">
+      <main className="max-w-md w-full mx-auto my-auto p-6 sm:p-8 rounded-2xl bg-[#0D0F12] border border-[#1F242D] space-y-6 shadow-xl">
+        <div className="text-center space-y-1">
           <h2 className="text-xl font-mono font-bold tracking-tight text-[#EDEDED]">
             Enter room
           </h2>
@@ -139,13 +135,13 @@ export const JoinRoomPage: React.FC<JoinRoomPageProps> = ({
         </div>
 
         {error && (
-          <div className="p-3.5 bg-rose-950/40 border border-rose-500/40 rounded-xl flex items-start gap-2.5 text-xs text-rose-300 relative z-10 backdrop-blur-md">
+          <div className="p-3 bg-rose-950/30 border border-rose-800/40 rounded-xl flex items-start gap-2.5 text-xs text-rose-300">
             <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
             <span className="leading-relaxed">{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4 relative z-10">
+        <form onSubmit={handleSubmit} className="space-y-4">
           {/* Room Code */}
           <div className="space-y-1.5">
             <label
@@ -161,7 +157,7 @@ export const JoinRoomPage: React.FC<JoinRoomPageProps> = ({
               value={code}
               onChange={handleCodeChange}
               autoFocus
-              className="w-full px-4 py-3 glass-input rounded-xl font-mono text-base font-semibold tracking-wider text-[#EDEDED] placeholder-[#8A909E]/40 focus:outline-none transition-all uppercase"
+              className="w-full px-3.5 py-2.5 bg-[#111318] border border-[#1F242D] focus:border-[#38BDF8]/60 rounded-xl font-mono text-base font-semibold tracking-wider text-[#EDEDED] placeholder-[#8A909E]/40 focus:outline-none transition-colors uppercase"
             />
           </div>
 
@@ -180,7 +176,7 @@ export const JoinRoomPage: React.FC<JoinRoomPageProps> = ({
               placeholder="Your name (e.g. Robin)"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="w-full px-4 py-3 glass-input rounded-xl text-sm text-[#EDEDED] placeholder-[#8A909E]/50 focus:outline-none transition-all"
+              className="w-full px-3.5 py-2.5 bg-[#111318] border border-[#1F242D] focus:border-[#38BDF8]/60 rounded-xl text-sm text-[#EDEDED] placeholder-[#8A909E]/50 focus:outline-none transition-colors"
             />
           </div>
 
@@ -190,17 +186,17 @@ export const JoinRoomPage: React.FC<JoinRoomPageProps> = ({
               id="join-submit-btn"
               type="submit"
               disabled={isVerifying || !code}
-              className="w-full py-3.5 px-4 rounded-xl glass-btn-primary disabled:opacity-50 font-semibold text-slate-900 transition-all flex items-center justify-center gap-2 group cursor-pointer disabled:cursor-not-allowed shadow-lg"
+              className="w-full py-3 px-4 rounded-xl bg-[#111318] hover:bg-[#1F242D] disabled:opacity-50 border border-[#1F242D] hover:border-[#38BDF8]/50 text-sm font-medium text-[#EDEDED] transition-all flex items-center justify-center gap-2 group cursor-pointer disabled:cursor-not-allowed shadow-xs"
             >
               {isVerifying ? (
                 <>
-                  <Loader2 className="w-4 h-4 text-slate-900 animate-spin" />
-                  <span className="font-mono text-xs font-bold text-slate-900">Verifying room...</span>
+                  <Loader2 className="w-4 h-4 text-[#38BDF8] animate-spin" />
+                  <span className="font-mono text-xs">Verifying room...</span>
                 </>
               ) : (
                 <>
                   <span>Join private room</span>
-                  <ArrowRight className="w-4 h-4 text-slate-900 group-hover:translate-x-0.5 transition-transform" />
+                  <ArrowRight className="w-4 h-4 text-[#38BDF8] group-hover:translate-x-0.5 transition-transform" />
                 </>
               )}
             </button>

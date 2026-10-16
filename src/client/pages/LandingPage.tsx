@@ -217,17 +217,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       </header>
 
       {/* Hero Content */}
-      <main className="max-w-md w-full mx-auto my-auto text-center space-y-7 p-8 rounded-3xl glass-card relative overflow-hidden">
-        {/* Glow accents */}
-        <div className="absolute -top-12 -right-12 w-36 h-36 rounded-full bg-[#38BDF8]/15 blur-2xl pointer-events-none"></div>
-        <div className="absolute -bottom-12 -left-12 w-36 h-36 rounded-full bg-purple-500/15 blur-2xl pointer-events-none"></div>
-
+      <main className="max-w-md w-full mx-auto my-auto text-center space-y-8">
         {/* Title & Tagline */}
-        <div className="space-y-3 relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full glass-panel text-[11px] font-mono text-[#38BDF8] border border-[#38BDF8]/30 mb-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#38BDF8] animate-pulse"></span>
-            ZERO-KNOWLEDGE CHAT
-          </div>
+        <div className="space-y-3">
           <h1 className="text-3xl sm:text-4xl font-mono font-bold tracking-tight text-[#EDEDED]">
             NEXUS
           </h1>
@@ -238,21 +230,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </p>
         </div>
 
-        <p className="text-sm text-[#8A909E] leading-relaxed max-w-sm mx-auto relative z-10">
+        <p className="text-sm text-[#8A909E] leading-relaxed max-w-sm mx-auto">
           Create a temporary private room,
           <br />
           share the code, and start talking.
         </p>
 
         {/* Action Controls */}
-        <div className="space-y-3 pt-2 relative z-10">
+        <div className="space-y-3 pt-2">
           <button
             id="landing-create-room-btn"
             onClick={onCreateRoom}
-            className="w-full py-3.5 px-4 rounded-xl glass-btn-primary font-medium text-slate-900 transition-all flex items-center justify-center gap-2 group cursor-pointer shadow-lg"
+            className="w-full py-3 px-4 rounded-xl bg-[#0D0F12] hover:bg-[#111318] border border-[#1F242D] hover:border-[#38BDF8]/50 text-sm font-medium text-[#EDEDED] transition-all flex items-center justify-center gap-2 group cursor-pointer shadow-xs"
           >
-            <span className="font-semibold tracking-wide">Create private room</span>
-            <ArrowRight className="w-4 h-4 text-slate-900 group-hover:translate-x-0.5 transition-transform" />
+            <span>Create private room</span>
+            <ArrowRight className="w-4 h-4 text-[#38BDF8] group-hover:translate-x-0.5 transition-transform" />
           </button>
 
           <div className="text-xs font-mono text-[#8A909E]/70">or</div>
@@ -260,17 +252,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <button
             id="landing-join-room-btn"
             onClick={onJoinRoom}
-            className="w-full py-3 px-3 rounded-xl glass-btn-secondary text-xs font-mono text-[#EDEDED] transition-all cursor-pointer"
+            className="w-full py-2.5 px-3 rounded-xl bg-transparent hover:bg-[#0D0F12] border border-[#1F242D]/70 hover:border-[#1F242D] text-xs font-mono text-[#8A909E] hover:text-[#EDEDED] transition-all cursor-pointer"
           >
-            [ Join existing room ]
+            [ Join a room ]
           </button>
         </div>
 
         {/* Private by Design pill */}
-        <div className="pt-2 relative z-10">
-          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full glass-panel text-[11px] font-mono text-[#8A909E] border border-white/10">
+        <div className="pt-4">
+          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0D0F12] border border-[#1F242D] text-[11px] font-mono text-[#8A909E]">
             <span className="w-1.5 h-1.5 rounded-full bg-[#38BDF8]"></span>
-            PRIVATE BY DESIGN · RAM ONLY
+            PRIVATE BY DESIGN
           </span>
         </div>
       </main>
