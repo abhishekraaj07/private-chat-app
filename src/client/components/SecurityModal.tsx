@@ -26,6 +26,8 @@ interface SecurityModalProps {
   isOpen: boolean;
   onClose: () => void;
   fingerprint?: string | null;
+  sasCode?: string | null;
+  sasEmojis?: string | null;
   isEncrypted?: boolean;
   participantCount?: number;
   isPeerVerified?: boolean;
@@ -36,6 +38,8 @@ export const SecurityModal: React.FC<SecurityModalProps> = ({
   isOpen,
   onClose,
   fingerprint,
+  sasCode,
+  sasEmojis,
   isEncrypted,
   isPeerVerified = false,
   onTogglePeerVerified,
@@ -46,7 +50,10 @@ export const SecurityModal: React.FC<SecurityModalProps> = ({
 
   const handleCopy = async () => {
     if (!fingerprint) return;
-    const ok = await copyToClipboard(fingerprint);
+    const textToCopy = sasEmojis && sasCode
+      ? `NEXUS Safety Code: ${sasEmojis} (${sasCode})\nFingerprint: ${fingerprint}`
+      : fingerprint;
+    const ok = await copyToClipboard(textToCopy);
     if (ok) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -104,12 +111,12 @@ export const SecurityModal: React.FC<SecurityModalProps> = ({
         <div className="mt-6 space-y-6">
           {/* Active Session Verification Card */}
           {isEncrypted && fingerprint && (
-            <div className="p-4 bg-[#111318] border border-[#1F242D] rounded-xl space-y-3 shadow-xs">
+            <div className="p-4 bg-[#111318] border border-[#1F242D] rounded-xl space-y-3.5 shadow-xs">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Key className="w-3.5 h-3.5 text-[#38BDF8]" />
                   <span className="text-xs font-mono font-semibold uppercase tracking-wider text-[#EDEDED]">
-                    Active Session Fingerprint
+                    Active Session Fingerprint &amp; Verification (SAS)
                   </span>
                 </div>
                 <button
@@ -131,12 +138,33 @@ export const SecurityModal: React.FC<SecurityModalProps> = ({
                 </button>
               </div>
 
-              <div className="p-3 bg-[#08090B] border border-[#1F242D] rounded-lg font-mono text-xs sm:text-sm text-center tracking-widest text-[#EDEDED] select-all">
-                {fingerprint}
+              {/* Visual SAS Emojis & Numeric Code */}
+              {sasEmojis && sasCode && (
+                <div className="p-3.5 bg-[#08090B] border border-[#38BDF8]/30 rounded-xl flex flex-col items-center justify-center gap-2">
+                  <div className="text-2xl sm:text-3xl tracking-widest filter drop-shadow">
+                    {sasEmojis}
+                  </div>
+                  <div className="font-mono text-sm sm:text-base font-bold text-[#38BDF8] tracking-widest bg-[#111318] px-3 py-0.5 rounded-md border border-[#1F242D]">
+                    {sasCode}
+                  </div>
+                  <span className="text-[11px] font-mono text-[#8A909E] tracking-tight">
+                    Read the 4 emojis or 6 digits aloud to your peer
+                  </span>
+                </div>
+              )}
+
+              {/* Raw Fingerprint */}
+              <div className="space-y-1">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-[#606775]">
+                  Full Hex Key Fingerprint
+                </span>
+                <div className="p-2.5 bg-[#08090B] border border-[#1F242D] rounded-lg font-mono text-xs text-center tracking-widest text-[#EDEDED] select-all">
+                  {fingerprint}
+                </div>
               </div>
 
               <p className="text-xs leading-relaxed text-[#8A909E] font-sans">
-                Compare this security code out-of-band (e.g. over a phone call or in person). If both ends match exactly, no Man-in-the-Middle (MITM) relay can intercept or decrypt your conversation.
+                Compare these emojis or code out-of-band. If both ends match exactly, mathematical guarantee confirms zero Man-in-the-Middle (MITM) tampering.
               </p>
 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-2 border-t border-[#1F242D]">

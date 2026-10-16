@@ -16,6 +16,7 @@ import {
   generateKeyPair,
   exportPublicKey,
   importPublicKey,
+  computeSafetyFingerprint,
   deriveSharedSecret,
   encryptMessage,
   decryptMessage,
@@ -27,6 +28,8 @@ export interface CryptoSessionState {
   isEncrypted: boolean;
   isPeerVerified: boolean;
   fingerprint: string | null;
+  sasCode: string | null;
+  sasEmojis: string | null;
   publicKeyJwk: JsonWebKey | null;
 }
 
@@ -36,6 +39,8 @@ export function useCryptoSession() {
     isEncrypted: false,
     isPeerVerified: false,
     fingerprint: null,
+    sasCode: null,
+    sasEmojis: null,
     publicKeyJwk: null,
   });
 
@@ -66,7 +71,7 @@ export function useCryptoSession() {
   /**
    * Derives shared secret when peer's public key is received via relay.
    */
-  const handlePeerPublicKey = useCallback(async (peerJwk: JsonWebKey): Promise<void> => {
+  const handlePeerPublicKey = useCallback(async (peerJwk: JsonWebKey, passphrase?: string): Promise<void> => {
     if (!keyPairRef.current) {
       throw new Error('Local keypair not yet generated');
     }
@@ -76,26 +81,25 @@ export function useCryptoSession() {
 
     const sharedKey = await deriveSharedSecret(
       keyPairRef.current.privateKey,
-      peerKey
+      peerKey,
+      undefined,
+      passphrase
     );
     sharedKeyRef.current = sharedKey;
 
-    // Calculate a deterministic, canonical session fingerprint identical on both clients
+    // Calculate deterministic canonical SAS safety fingerprint & emojis
     let fingerprint = 'E2E-ACTIVE';
+    let sasCode: string | null = null;
+    let sasEmojis: string | null = null;
+
     try {
       const myJwk = publicKeyJwkRef.current || state.publicKeyJwk;
-      const keyA = `${myJwk?.x || ''}:${myJwk?.y || ''}`;
-      const keyB = `${peerJwk.x || ''}:${peerJwk.y || ''}`;
-      // Canonical sorting ensures both participants calculate the exact same hash
-      const combined = keyA < keyB ? `${keyA}|${keyB}` : `${keyB}|${keyA}`;
-
-      const hashBuffer = await globalThis.crypto.subtle.digest(
-        'SHA-256',
-        new TextEncoder().encode(combined)
-      );
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const hashHex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
-      fingerprint = hashHex.slice(0, 12).toUpperCase().match(/.{1,4}/g)?.join('-') || 'SECURE';
+      if (myJwk) {
+        const safety = await computeSafetyFingerprint(myJwk, peerJwk);
+        fingerprint = safety.hexFormatted;
+        sasCode = safety.numeric;
+        sasEmojis = safety.emojis;
+      }
     } catch {
       // fallback
     }
@@ -105,6 +109,8 @@ export function useCryptoSession() {
       isEncrypted: true,
       isPeerVerified: false,
       fingerprint,
+      sasCode,
+      sasEmojis,
     }));
   }, [state.publicKeyJwk]);
 

@@ -27,6 +27,7 @@ import { PinnedBar } from '../components/PinnedBar.tsx';
 import { DisappearingModal } from '../components/DisappearingModal.tsx';
 import { ViewOnceModal } from '../components/ViewOnceModal.tsx';
 import { VoiceCallModal } from '../components/VoiceCallModal.tsx';
+import { CalculatorDecoy } from '../components/CalculatorDecoy.tsx';
 import { ToastProvider } from '../components/Toast.tsx';
 import { ConfirmationModal } from '../components/ConfirmationModal.tsx';
 import { useRoomSocket } from '../../hooks/useRoomSocket.ts';
@@ -59,6 +60,11 @@ export const ChatRoomPage: React.FC<ChatRoomPageProps> = ({
   const [isDisappearingModalOpen, setIsDisappearingModalOpen] = useState(false);
   const [isLeaveConfirmOpen, setIsLeaveConfirmOpen] = useState(false);
   const [isBurnConfirmOpen, setIsBurnConfirmOpen] = useState(false);
+
+  // Stealth Decoy & Anti-Surveillance Blur State
+  const [isStealthOpen, setIsStealthOpen] = useState(false);
+  const [privacyBlurEnabled, setPrivacyBlurEnabled] = useState(true);
+  const [isScreenBlurred, setIsScreenBlurred] = useState(false);
 
   // Waiting-for-peer copy state
   const [waitCopiedCode, setWaitCopiedCode] = useState(false);
@@ -337,6 +343,57 @@ export const ChatRoomPage: React.FC<ChatRoomPageProps> = ({
     editingMessage,
   ]);
 
+  const handlePanicKill = useCallback(() => {
+    try {
+      leaveRoom();
+      sessionStorage.clear();
+      localStorage.clear();
+    } catch {
+      // ignore
+    }
+    window.location.replace('https://www.google.com');
+  }, [leaveRoom]);
+
+  // Anti-surveillance auto-blur on tab switch / window blur
+  useEffect(() => {
+    if (!privacyBlurEnabled) {
+      setIsScreenBlurred(false);
+      return;
+    }
+
+    const handleVisibility = () => {
+      if (document.hidden) {
+        setIsScreenBlurred(true);
+      }
+    };
+
+    const handleBlur = () => {
+      setIsScreenBlurred(true);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('blur', handleBlur);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('blur', handleBlur);
+    };
+  }, [privacyBlurEnabled]);
+
+  // Global stealth (Ctrl+Alt+C) and panic (Ctrl+Alt+K) shortcuts
+  useEffect(() => {
+    const handleGlobalShortcuts = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'c') {
+        e.preventDefault();
+        setIsStealthOpen((v) => !v);
+      } else if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        handlePanicKill();
+      }
+    };
+    window.addEventListener('keydown', handleGlobalShortcuts);
+    return () => window.removeEventListener('keydown', handleGlobalShortcuts);
+  }, [handlePanicKill]);
+
   const isInputDisabled = status !== 'connected' || !crypto.isEncrypted;
   let disabledReason: string | undefined;
   if (status === 'connecting') {
@@ -378,6 +435,10 @@ export const ChatRoomPage: React.FC<ChatRoomPageProps> = ({
           onLeave={handleLeave}
           onOpenGuide={() => setIsGuideOpen(true)}
           onOpenFaq={() => setIsFaqOpen(true)}
+          onOpenStealth={() => setIsStealthOpen(true)}
+          privacyBlurEnabled={privacyBlurEnabled}
+          onTogglePrivacyBlur={() => setPrivacyBlurEnabled((v) => !v)}
+          onPanicKill={handlePanicKill}
         />
 
         {/* Local Blocked Banner */}
@@ -597,6 +658,8 @@ export const ChatRoomPage: React.FC<ChatRoomPageProps> = ({
           isOpen={isSecurityOpen}
           onClose={() => setIsSecurityOpen(false)}
           fingerprint={crypto.fingerprint}
+          sasCode={crypto.sasCode}
+          sasEmojis={crypto.sasEmojis}
           isEncrypted={crypto.isEncrypted}
           participantCount={participants.length}
           isPeerVerified={crypto.isPeerVerified}
@@ -659,6 +722,44 @@ export const ChatRoomPage: React.FC<ChatRoomPageProps> = ({
           onConfirm={handleConfirmBurn}
           onClose={() => setIsBurnConfirmOpen(false)}
         />
+
+        {/* Camouflage Calculator Decoy (Stealth Mode) */}
+        <CalculatorDecoy
+          isOpen={isStealthOpen}
+          roomCode={roomCode}
+          onUnlock={() => setIsStealthOpen(false)}
+        />
+
+        {/* Anti-Surveillance Focus Shield Blur Overlay */}
+        {isScreenBlurred && privacyBlurEnabled && (
+          <div
+            id="privacy-blur-shield"
+            onClick={() => setIsScreenBlurred(false)}
+            className="fixed inset-0 z-40 bg-black/90 backdrop-blur-xl flex flex-col items-center justify-center cursor-pointer p-4 text-center select-none animate-in fade-in duration-150"
+          >
+            <div
+              className="p-6 rounded-2xl bg-[#0D0F12] border border-[#1F242D] max-w-sm flex flex-col items-center gap-3 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="w-12 h-12 rounded-xl bg-[#111318] border border-[#1F242D] flex items-center justify-center text-[#38BDF8]">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <div className="font-mono font-semibold text-sm text-[#EDEDED] uppercase tracking-wider">
+                Anti-Surveillance Shield
+              </div>
+              <p className="text-xs text-[#8A909E] font-sans leading-relaxed">
+                Chat hidden automatically because window lost focus. Click below to reveal.
+              </p>
+              <button
+                type="button"
+                onClick={() => setIsScreenBlurred(false)}
+                className="mt-2 w-full py-2 rounded-xl bg-[#38BDF8] text-[#08090B] font-mono font-bold text-xs cursor-pointer hover:bg-[#0284C7] transition-colors"
+              >
+                Reveal Chat
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </ToastProvider>
   );

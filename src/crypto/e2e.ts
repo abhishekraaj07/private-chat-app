@@ -142,17 +142,81 @@ export async function importPublicKey(jwk: JsonWebKey): Promise<CryptoKey> {
   }
 }
 
+const SAS_EMOJIS = [
+  '🛡️', '⚡', '🔑', '💎', '🚀', '🪐', '🔮', '🧬',
+  '🌊', '🌋', '🦅', '🦊', '🦁', '🐬', '🦉', '🦄',
+  '🍄', '🍀', '🍁', '🌟', '☀️', '🌙', '🔥', '🌈',
+  '👑', '🎯', '🧩', '🎲', '⚓', '🛸', '🧭', '🛰️',
+];
+
+export interface SafetyFingerprint {
+  numeric: string;
+  emojis: string;
+  rawHash: string;
+  hexFormatted: string;
+}
+
+/**
+ * Computes a deterministic Short Authentication String (SAS) & Emoji Fingerprint
+ * across both participants' public keys.
+ *
+ * Canonical sorting ensures creator and peer compute identical values regardless
+ * of role or connection sequence.
+ */
+export async function computeSafetyFingerprint(
+  localJwk: JsonWebKey,
+  peerJwk: JsonWebKey
+): Promise<SafetyFingerprint> {
+  try {
+    const keyA = `${localJwk.x || ''}:${localJwk.y || ''}`;
+    const keyB = `${peerJwk.x || ''}:${peerJwk.y || ''}`;
+    const canonical = keyA < keyB ? `${keyA}|${keyB}` : `${keyB}|${keyA}`;
+
+    const subtle = getSubtleCrypto();
+    const hashBuffer = await subtle.digest('SHA-256', new TextEncoder().encode(canonical));
+    const hashBytes = new Uint8Array(hashBuffer);
+
+    // Emojis: take first 4 bytes modulo 32
+    const emojis = [
+      SAS_EMOJIS[hashBytes[0] % 32],
+      SAS_EMOJIS[hashBytes[1] % 32],
+      SAS_EMOJIS[hashBytes[2] % 32],
+      SAS_EMOJIS[hashBytes[3] % 32],
+    ].join(' ');
+
+    // 6-digit numeric SAS: take next 4 bytes as uint32 % 1000000
+    const dv = new DataView(hashBytes.buffer, hashBytes.byteOffset, hashBytes.byteLength);
+    const num = (dv.getUint32(4, false) % 1000000).toString().padStart(6, '0');
+    const numeric = `${num.slice(0, 3)}-${num.slice(3)}`;
+
+    // Raw hex & formatted 4-character blocks
+    const hex = Array.from(hashBytes).map((b) => b.toString(16).padStart(2, '0')).join('');
+    const hexFormatted = hex.slice(0, 16).toUpperCase().match(/.{1,4}/g)?.join('-') || 'SECURE';
+
+    return {
+      numeric,
+      emojis,
+      rawHash: hex,
+      hexFormatted,
+    };
+  } catch (err) {
+    throw new CryptoError('Failed to compute safety fingerprint', err);
+  }
+}
+
 /**
  * Derives a shared symmetric AES-GCM 256-bit encryption key using ECDH + HKDF-SHA-256.
  *
  * @param privateKey - Local participant's ECDH private key (non-extractable)
  * @param peerPublicKey - Remote participant's imported ECDH public key
  * @param contextInfo - Domain separation string (defaults to NEXUS-E2EE-v1)
+ * @param passphrase - Optional out-of-band room password to salt HKDF key derivation
  */
 export async function deriveSharedSecret(
   privateKey: CryptoKey,
   peerPublicKey: CryptoKey,
-  contextInfo: string = PROTOCOL_CONTEXT
+  contextInfo: string = PROTOCOL_CONTEXT,
+  passphrase?: string
 ): Promise<CryptoKey> {
   try {
     const subtle = getSubtleCrypto();
@@ -178,8 +242,18 @@ export async function deriveSharedSecret(
 
     // Step 3: Derive AES-GCM 256 key with HKDF-SHA-256
     const info = new TextEncoder().encode(contextInfo);
-    // Protocol salt: fixed 16-byte zero salt per RFC 5869 when salt is omitted/static
-    const salt = new Uint8Array(16);
+
+    // Protocol salt: mix optional room passphrase into salt via SHA-256
+    let salt: Uint8Array;
+    if (passphrase && passphrase.trim().length > 0) {
+      const passBuffer = await subtle.digest(
+        'SHA-256',
+        new TextEncoder().encode(`NEXUS-SALT-v1:${passphrase.trim()}`)
+      );
+      salt = new Uint8Array(passBuffer).slice(0, 16);
+    } else {
+      salt = new Uint8Array(16);
+    }
 
     return await subtle.deriveKey(
       {

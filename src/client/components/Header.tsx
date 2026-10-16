@@ -24,6 +24,9 @@ import {
   X,
   BookOpen,
   HelpCircle,
+  Calculator,
+  EyeOff,
+  Zap,
 } from 'lucide-react';
 import { copyToClipboard } from '../../utils/format.ts';
 import { ConnectionStatus, formatTtlLabel } from '../../hooks/useRoomSocket.ts';
@@ -47,6 +50,10 @@ interface HeaderProps {
   onLeave: () => void;
   onOpenGuide?: () => void;
   onOpenFaq?: () => void;
+  onOpenStealth?: () => void;
+  privacyBlurEnabled?: boolean;
+  onTogglePrivacyBlur?: () => void;
+  onPanicKill?: () => void;
 }
 
 function formatLastSeen(ts: number): string {
@@ -76,6 +83,10 @@ export const Header: React.FC<HeaderProps> = ({
   onLeave,
   onOpenGuide,
   onOpenFaq,
+  onOpenStealth,
+  privacyBlurEnabled = false,
+  onTogglePrivacyBlur,
+  onPanicKill,
 }) => {
   const [copied, setCopied] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -265,6 +276,21 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="font-medium text-[11px] sm:text-xs">{ttlLabel}</span>
           </button>
 
+          {/* 1.5. Stealth Mode Decoy Trigger */}
+          {onOpenStealth && (
+            <button
+              id="header-stealth-btn"
+              type="button"
+              onClick={onOpenStealth}
+              className="h-8 inline-flex items-center justify-center gap-1.5 px-2 sm:px-2.5 rounded-lg border border-[#1F242D] bg-[#111318] hover:bg-[#1A1E26] text-xs font-mono text-[#8A909E] hover:text-[#EDEDED] transition-all cursor-pointer shadow-xs"
+              title="Stealth Decoy Calculator (Ctrl+Alt+C)"
+              aria-label="Stealth Decoy Calculator"
+            >
+              <Calculator className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+              <span className="hidden md:inline font-medium">Stealth</span>
+            </button>
+          )}
+
           {/* 2. Frequent Used: P2P Encrypted Voice Call */}
           {onStartCall && (
             <button
@@ -426,6 +452,59 @@ export const Header: React.FC<HeaderProps> = ({
                     </span>
                   </button>
 
+                  {/* 4. Stealth Decoy Calculator */}
+                  {onOpenStealth && (
+                    <button
+                      id="header-menu-stealth-btn"
+                      type="button"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onOpenStealth();
+                      }}
+                      className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-mono text-[#EDEDED] hover:bg-[#161920] transition-colors cursor-pointer text-left"
+                      role="menuitem"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Calculator className="w-4 h-4 text-cyan-400 shrink-0" />
+                        <div>
+                          <div className="font-medium">Stealth Mode (Decoy)</div>
+                          <div className="text-[10px] text-[#8A909E]">Disguise as working calculator</div>
+                        </div>
+                      </div>
+                      <span className="text-[10px] text-[#8A909E] bg-[#111318] px-1.5 py-0.5 rounded border border-[#1F242D]">
+                        Ctrl+Alt+C
+                      </span>
+                    </button>
+                  )}
+
+                  {/* 5. Anti-Surveillance Focus Blur Toggle */}
+                  {onTogglePrivacyBlur && (
+                    <button
+                      id="header-menu-privacy-blur-btn"
+                      type="button"
+                      onClick={() => {
+                        onTogglePrivacyBlur();
+                      }}
+                      className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-mono text-[#EDEDED] hover:bg-[#161920] transition-colors cursor-pointer text-left"
+                      role="menuitem"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <EyeOff className={`w-4 h-4 shrink-0 ${privacyBlurEnabled ? 'text-emerald-400' : 'text-[#8A909E]'}`} />
+                        <div>
+                          <div className="font-medium">Surveillance Blur</div>
+                          <div className="text-[10px] text-[#8A909E]">Auto-blur on tab switch / unfocus</div>
+                        </div>
+                      </div>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded border ${
+                        privacyBlurEnabled
+                          ? 'bg-emerald-950/40 text-emerald-300 border-emerald-700/50'
+                          : 'bg-[#111318] text-[#8A909E] border-[#1F242D]'
+                      }`}>
+                        {privacyBlurEnabled ? 'ACTIVE' : 'OFF'}
+                      </span>
+                    </button>
+                  )}
+
                   {/* 6. Operational Guide */}
                   {onOpenGuide && (
                     <button
@@ -481,8 +560,31 @@ export const Header: React.FC<HeaderProps> = ({
                 {/* Divider */}
                 <div className="h-[1px] bg-[#1F242D] mx-2" />
 
-                {/* ── Danger action: Emergency Burn Room ── */}
-                <div className="p-1.5 space-y-0.5">
+                {/* ── Danger action: Emergency Burn Room & Panic Kill ── */}
+                <div className="p-1.5 space-y-1">
+                  {onPanicKill && (
+                    <button
+                      id="header-panic-kill-btn"
+                      type="button"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onPanicKill();
+                      }}
+                      className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-mono text-amber-300 hover:bg-amber-950/40 hover:text-amber-100 border border-amber-900/40 transition-colors cursor-pointer text-left"
+                      role="menuitem"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Zap className="w-4 h-4 text-amber-400 shrink-0" />
+                        <div>
+                          <div className="font-bold text-amber-300">PANIC BLANK SCREEN</div>
+                          <div className="text-[10px] text-amber-400/80">Instant erase &amp; escape</div>
+                        </div>
+                      </div>
+                      <span className="text-[9px] text-amber-400 bg-amber-950/60 border border-amber-800/60 px-1 py-0.5 rounded font-bold">
+                        Ctrl+Alt+K
+                      </span>
+                    </button>
+                  )}
                   <div>
                     <button
                       id="header-burn-room-btn"
