@@ -529,10 +529,10 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                 <div
                   id={`chat-text-${msg.id}`}
                   onClick={() => setActiveActionMenuId((prev) => (prev === msg.id ? null : msg.id))}
-                  className={`message-bubble-target px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-2xl text-sm leading-relaxed w-fit max-w-full transition-all cursor-pointer sm:cursor-default ${
+                  className={`message-bubble-target px-4 py-2.5 sm:px-4.5 sm:py-3 rounded-2xl text-sm leading-relaxed w-fit max-w-full transition-all cursor-pointer sm:cursor-default ${
                     isOwn
-                      ? 'bg-[#111318] border border-[#1F242D] text-[#EDEDED] shadow-xs'
-                      : 'bg-[#0D0F12] border border-[#1F242D] text-[#EDEDED] shadow-xs'
+                      ? 'glass-bubble-own'
+                      : 'glass-bubble-peer'
                   }`}
                 >
                   {/* Quoted Reply Preview (if message is a reply) */}
