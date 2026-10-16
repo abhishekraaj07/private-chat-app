@@ -31,32 +31,22 @@ export const CreateRoomPage: React.FC<CreateRoomPageProps> = ({
   const [participantCount, setParticipantCount] = useState(1);
   const [isCheckingPresence, setIsCheckingPresence] = useState(false);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    async function initRoom() {
-      setIsCreating(true);
-      setError(null);
-      try {
-        const data = await createRoom();
-        if (isMounted) {
-          setRoomCode(data.roomCode);
-          setIsCreating(false);
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err instanceof Error ? err.message : 'Failed to initialize room');
-          setIsCreating(false);
-        }
-      }
+  const initRoom = React.useCallback(async () => {
+    setIsCreating(true);
+    setError(null);
+    try {
+      const data = await createRoom();
+      setRoomCode(data.roomCode);
+      setIsCreating(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to initialize room');
+      setIsCreating(false);
     }
-
-    initRoom();
-
-    return () => {
-      isMounted = false;
-    };
   }, []);
+
+  useEffect(() => {
+    initRoom();
+  }, [initRoom]);
 
   // Poll room info while waiting so we know when second participant connects
   useEffect(() => {
@@ -136,8 +126,8 @@ export const CreateRoomPage: React.FC<CreateRoomPageProps> = ({
           <div className="py-8 text-center space-y-4">
             <p className="text-sm text-rose-400 font-mono">{error}</p>
             <button
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-[#111318] border border-[#1F242D] rounded-lg text-xs font-mono text-[#EDEDED]"
+              onClick={initRoom}
+              className="px-4 py-2 bg-[#111318] hover:bg-[#1F242D] border border-[#1F242D] rounded-lg text-xs font-mono text-[#EDEDED] cursor-pointer transition-colors"
             >
               Try Again
             </button>

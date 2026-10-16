@@ -18,7 +18,7 @@ export class ApiError extends Error {
   }
 }
 
-export const DEFAULT_PRODUCTION_URL = 'https://nexus-private-chat.abhishekraaj07.workers.dev';
+export const DEFAULT_PRODUCTION_URL = 'https://private-chat-app.abhishekraaj07.workers.dev';
 
 /**
  * Checks whether the app is executing inside a Capacitor native shell (Android/iOS)

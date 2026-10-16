@@ -38,6 +38,11 @@ function applySecurityHeaders(headers: Headers, allowedOrigin?: string | null): 
 function isOriginAllowed(origin: string | null, url: URL): boolean {
   if (!origin) return true;
   if (origin === url.origin) return true;
+  try {
+    const originUrl = new URL(origin);
+    if (originUrl.hostname === url.hostname) return true;
+    if (originUrl.hostname.endsWith('.workers.dev')) return true;
+  } catch {}
   if (
     origin === 'https://localhost' ||
     origin === 'capacitor://localhost' ||
