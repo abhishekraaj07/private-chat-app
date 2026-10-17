@@ -294,12 +294,22 @@ export const ChatRoomPage: React.FC<ChatRoomPageProps> = ({
     burnRoom();
   }, [burnRoom]);
 
-  // Global keyboard shortcuts (Ctrl+Shift+X for panic burn, Ctrl+K/F for search, Esc to dismiss)
+  // Global keyboard shortcuts (Ctrl+Shift+X for panic burn, Alt+S for shield, Ctrl+K/F for search, Esc to dismiss)
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // If blurred, pressing Space, Enter, or Escape reveals the conversation
+      if (isScreenBlurred && (e.key === ' ' || e.key === 'Enter' || e.key === 'Escape')) {
+        e.preventDefault();
+        setIsScreenBlurred(false);
+        return;
+      }
+
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'x' || e.key === 'X')) {
         e.preventDefault();
         handleBurnRoom();
+      } else if (e.altKey && (e.key === 's' || e.key === 'S' || e.code === 'KeyS')) {
+        e.preventDefault();
+        setIsScreenBlurred((prev) => !prev);
       } else if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'f')) {
         e.preventDefault();
         setIsSearchOpen((prev) => !prev);
@@ -328,6 +338,7 @@ export const ChatRoomPage: React.FC<ChatRoomPageProps> = ({
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, [
+    isScreenBlurred,
     handleBurnRoom,
     isLeaveConfirmOpen,
     isBurnConfirmOpen,
@@ -345,14 +356,19 @@ export const ChatRoomPage: React.FC<ChatRoomPageProps> = ({
 
   const handlePanicKill = useCallback(() => {
     try {
+      if (remoteStream) {
+        remoteStream.getTracks().forEach((track) => track.stop());
+      }
       leaveRoom();
+      crypto.resetCrypto();
       sessionStorage.clear();
       localStorage.clear();
+      window.history.replaceState(null, '', '/');
     } catch {
       // ignore
     }
     window.location.replace('https://www.google.com');
-  }, [leaveRoom]);
+  }, [leaveRoom, crypto, remoteStream]);
 
   // Anti-surveillance auto-blur on tab switch / window blur
   useEffect(() => {
@@ -438,6 +454,8 @@ export const ChatRoomPage: React.FC<ChatRoomPageProps> = ({
           onOpenStealth={() => setIsStealthOpen(true)}
           privacyBlurEnabled={privacyBlurEnabled}
           onTogglePrivacyBlur={() => setPrivacyBlurEnabled((v) => !v)}
+          isScreenBlurred={isScreenBlurred}
+          onTriggerBlur={() => setIsScreenBlurred((v) => !v)}
           onPanicKill={handlePanicKill}
         />
 
@@ -734,29 +752,58 @@ export const ChatRoomPage: React.FC<ChatRoomPageProps> = ({
         {isScreenBlurred && privacyBlurEnabled && (
           <div
             id="privacy-blur-shield"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Anti-Surveillance Shield"
             onClick={() => setIsScreenBlurred(false)}
-            className="fixed inset-0 z-40 bg-black/90 backdrop-blur-xl flex flex-col items-center justify-center cursor-pointer p-4 text-center select-none animate-in fade-in duration-150"
+            className="fixed inset-0 z-50 bg-[#08090B]/90 backdrop-blur-2xl flex flex-col items-center justify-center cursor-pointer p-4 text-center select-none animate-in fade-in duration-150"
           >
             <div
-              className="p-6 rounded-2xl bg-[#0D0F12] border border-[#1F242D] max-w-sm flex flex-col items-center gap-3 shadow-2xl"
+              className="p-6 sm:p-7 rounded-2xl bg-[#0D0F12] border border-[#1F242D] max-w-sm w-full flex flex-col items-center gap-3.5 shadow-2xl relative overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="w-12 h-12 rounded-xl bg-[#111318] border border-[#1F242D] flex items-center justify-center text-[#38BDF8]">
-                <ShieldCheck className="w-6 h-6" />
+              {/* Subtle top ambient glow */}
+              <div className="absolute inset-0 bg-gradient-to-b from-[#38BDF8]/5 to-transparent pointer-events-none" />
+
+              <div className="relative">
+                <div className="w-14 h-14 rounded-2xl bg-[#111318] border border-[#1F242D] flex items-center justify-center text-[#38BDF8] shadow-inner">
+                  <ShieldCheck className="w-7 h-7" />
+                </div>
+                <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                </span>
               </div>
-              <div className="font-mono font-semibold text-sm text-[#EDEDED] uppercase tracking-wider">
-                Anti-Surveillance Shield
+
+              <div>
+                <div className="font-mono font-bold text-sm text-[#EDEDED] uppercase tracking-wider">
+                  Anti-Surveillance Shield
+                </div>
+                <div className="text-[11px] font-mono text-emerald-400 mt-0.5">
+                  ACTIVE • ZERO-LEAK MODE
+                </div>
               </div>
+
               <p className="text-xs text-[#8A909E] font-sans leading-relaxed">
-                Chat hidden automatically because window lost focus. Click below to reveal.
+                Chat content is hidden to prevent shoulder-surfing, tab switching previews, and screen recording.
               </p>
+
               <button
                 type="button"
                 onClick={() => setIsScreenBlurred(false)}
-                className="mt-2 w-full py-2 rounded-xl bg-[#38BDF8] text-[#08090B] font-mono font-bold text-xs cursor-pointer hover:bg-[#0284C7] transition-colors"
+                className="mt-1 w-full py-2.5 px-4 rounded-xl bg-[#38BDF8] hover:bg-[#0284C7] text-[#08090B] font-mono font-bold text-xs cursor-pointer transition-colors shadow-lg shadow-[#38BDF8]/20 flex items-center justify-center gap-2"
               >
-                Reveal Chat
+                <span>Reveal Chat</span>
+                <span className="text-[10px] font-normal opacity-70 bg-[#08090B]/20 px-1.5 py-0.5 rounded">
+                  Space / Click
+                </span>
               </button>
+
+              <div className="text-[10px] font-mono text-[#8A909E]/70 flex items-center gap-1.5">
+                <span>Press</span>
+                <kbd className="px-1 py-0.5 rounded bg-[#111318] border border-[#1F242D] text-[#EDEDED]">Alt+S</kbd>
+                <span>anytime to toggle shield</span>
+              </div>
             </div>
           </div>
         )}

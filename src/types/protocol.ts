@@ -104,8 +104,9 @@ export interface EncryptedFileAttachment {
 }
 
 export interface ReplyReference {
-  id: string;
+  id?: string;
   messageId?: string;
+  senderId?: string;
   senderName: string;
   text?: string;
   snippet?: string;
@@ -120,7 +121,7 @@ export type MessageDeliveryStatus = 'sending' | 'sent' | 'delivered' | 'read' | 
 
 export interface ChatMessage {
   id: string;
-  kind?: 'message';
+  kind: 'message';
   senderId: string;
   senderName: string;
   text?: string;
@@ -241,7 +242,7 @@ export interface SystemNotification {
 }
 
 export type TimelineItem =
-  | ({ kind: 'message' } & ChatMessage)
+  | ChatMessage
   | ({ kind: 'system' } & SystemNotification);
 
 export interface RoomInfoResponse {

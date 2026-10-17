@@ -1,1 +1,8 @@
 @import "tailwindcss";
+
+/* Anti-Surveillance Print & Screenshot Protection */
+@media print {
+  body {
+    display: none !important;
+  }
+}

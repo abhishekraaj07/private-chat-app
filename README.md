@@ -9,25 +9,25 @@
 ╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝
 ```
 
-### **NEXUS v2.0.0 Production Release**
-### **ASTRO 5 ISLANDS • ZERO-KNOWLEDGE • CLIENT-SIDE ENCRYPTED CHAT**
+### **NEXUS v2.1.0 Production Release**
+### **VITE 6 + REACT 19 • ZERO-KNOWLEDGE • CLIENT-SIDE ENCRYPTED CHAT**
 
-[![Astro 5](https://img.shields.io/badge/Astro-5.4-BC52EE?style=for-the-badge&logo=astro&logoColor=white)](https://astro.build)
-[![Live Deployment](https://img.shields.io/badge/Live_Deployment-Cloudflare_Workers-38BDF8?style=for-the-badge&logo=cloudflare&logoColor=white)](https://nexus-private-chat.abhishekraaj07.workers.dev)
+[![Vite 6](https://img.shields.io/badge/Vite-6.2-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev)
+[![Live Deployment](https://img.shields.io/badge/Live_Deployment-Cloudflare_Workers-38BDF8?style=for-the-badge&logo=cloudflare&logoColor=white)](https://private-chat-app.abhishekraaj07.workers.dev)
 [![Download Android APK](https://img.shields.io/badge/Download_APK-Android_Native-emerald?style=for-the-badge&logo=android&logoColor=white)](https://github.com/abhishekraaj07/private-chat-app/raw/main/release/NEXUS.apk)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![React 19](https://img.shields.io/badge/React-19.0-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
 [![Web Crypto API](https://img.shields.io/badge/Cryptography-AES--256--GCM%20%7C%20ECDH%20P--256-emerald?style=for-the-badge&logo=shield&logoColor=white)](https://w3c.github.io/webcrypto/)
-[![Vitest](https://img.shields.io/badge/Tests-168%20Passed%20(100%25)-brightgreen?style=for-the-badge&logo=vitest&logoColor=white)](https://vitest.dev/)
+[![Vitest](https://img.shields.io/badge/Tests-184%20Passed%20(100%25)-brightgreen?style=for-the-badge&logo=vitest&logoColor=white)](https://vitest.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
 ---
 
-**NEXUS** is a minimalist, temporary, privacy-first messaging application engineered with client-side end-to-end encryption. Built on the **Astro 5 Islands Architecture**, **W3C Web Crypto API**, **Cloudflare Workers**, and **Durable Objects**.
+**NEXUS** is a minimalist, temporary, privacy-first messaging application engineered with client-side end-to-end encryption. Built with **Vite 6**, **React 19**, **Tailwind CSS v4**, **W3C Web Crypto API**, **Cloudflare Workers**, and **Durable Objects**.
 
 > *"Private conversations. Ephemeral rooms. Client-side encryption. Nothing unnecessary."*
 
-[🌐 **Launch NEXUS Web Client**](https://nexus-private-chat.abhishekraaj07.workers.dev) &nbsp;|&nbsp; [📱 **Direct Download Android APK (v2.0.0)**](https://github.com/abhishekraaj07/private-chat-app/raw/main/release/NEXUS.apk)
+[🌐 **Launch NEXUS Web Client**](https://private-chat-app.abhishekraaj07.workers.dev) &nbsp;|&nbsp; [📱 **Direct Download Android APK (v2.0.0)**](https://github.com/abhishekraaj07/private-chat-app/raw/main/release/NEXUS.apk)
 
 </div>
 
@@ -35,7 +35,7 @@
 
 ## ⚡ What's New in NEXUS V2
 
-NEXUS v2.0 brings an architectural overhaul to **Astro 5 Islands** and introduces 4 Next-Gen cryptographic communication capabilities:
+NEXUS v2 introduces next-gen cryptographic communication capabilities:
 
 ### 1. 🎙️ Ephemeral E2EE Voice Notes (`VoiceRecorder.tsx`)
 * In-browser Opus/WebM audio recording up to 120 seconds with live canvas audio waveform visualizer.
@@ -47,25 +47,35 @@ NEXUS v2.0 brings an architectural overhaul to **Astro 5 Islands** and introduce
 * **100% Zero-Cloud Leak**: Commands are parsed and evaluated strictly inside the browser runtime—zero data is sent to external AI APIs or LLM vendors.
 * Available commands: `@nexus help`, `@nexus calc <expression>`, `@nexus cipher <text>`, `@nexus flip`, `@nexus roll`, `@nexus time`.
 
-### 3. ⚡ WebRTC Direct P2P DataChannel (`webrtcP2P.ts`)
-* Uses WebSocket relay solely for initial SDP offer/answer and ICE candidate exchange.
-* Automatically establishes a direct, high-bandwidth browser-to-browser peer connection (`RTCDataChannel`), bypassing server relay hops entirely for peer communication.
+### 3. 🔢 Cryptographic Short Authentication String (SAS) & Emoji Fingerprint
+* Computes deterministic canonical SHA-256 hash across creator and peer ECDH public keys.
+* Displays **4 security emojis** (e.g. `🛡️ ⚡ 🪐 💎`) and **6-digit code** (`482-195`) for out-of-band verbal peer verification against MITM interception.
 
-### 4. 🚨 Panic / Duress Emergency Screen Wipe (`duressWipe.ts`)
-* Instant emergency wipe triggered via global keyboard shortcut **`Ctrl + Alt + Q`** (or `Cmd + Alt + Q` on macOS).
-* Instantly destroys all AES-256-GCM session keys and ECDH keypairs in RAM.
-* Purges `localStorage` and `sessionStorage`.
-* Rewrites browser history stack to prevent back-button inspection.
-* Hard redirects active tab to an innocent decoy website (`wikipedia.org/wiki/Cryptography`).
+### 4. 🧮 Camouflage Calculator Decoy & Anti-Surveillance Shield
+* **Stealth Decoy**: Instantly disguise the active room as a working retro CASIO fx-991EX engineering calculator (`Ctrl+Alt+C`), unlocked via PIN `1337`.
+* **Anti-Surveillance Focus Shield (`Alt+S`)**: Viewport automatically blurs on tab switch (`document.hidden`), window unfocus, or instant manual hotkey **`Alt+S`** / header shield button to defeat shoulder-surfing. Press **`Space`**, **`Enter`**, or click to reveal.
+* **Anti-Screen Capture Print Protection**: CSS `@media print` rule completely blanks body rendering to prevent physical prints and Print-to-PDF dumps.
+
+### 5. 📋 Auto-Sanitizing Ephemeral Clipboard
+* Automatically wipes copied room codes, message text, and cryptographic secrets from the system clipboard after **30 seconds** via background timers.
+* Includes `clearClipboardNow()` for instant zeroization upon room exit or panic triggers.
+
+### 6. 🚨 Panic / Duress Emergency Screen Wipe (`duressWipe.ts`)
+* Instant emergency wipe triggered via global keyboard shortcut **`Ctrl + Alt + K`** or **`Ctrl + Alt + Q`**.
+* Halts active media tracks, disconnects WebSocket relay, zeroes in-memory crypto keys, purges `localStorage`/`sessionStorage`, rewrites history stack, and hard-redirects to decoy website.
+
+### 7. 🛡️ Server-Side CSWSH & Relay Replay Defense
+* **Cross-Site WebSocket Hijacking (CSWSH) Gate**: Rejects unapproved origins on WebSocket upgrades in `worker/index.ts`.
+* **In-Memory Replay Cache**: 500-entry message ID deduplication filter in `RoomDurableObject` rejecting replayed message frames.
 
 ---
 
-## 🏝️ Astro 5 Islands Architecture
+## ⚡ Vite 6 + React 19 Architecture
 
-NEXUS leverages Astro 5 Islands for performance and security:
-* **Zero Initial JavaScript Overhead**: The outer application shell, styling tokens, and layout stream as static HTML/CSS from the edge, achieving near-instant first contentful paint (FCP).
-* **Targeted Interactive Hydration**: The encrypted messaging workspace hydrates dynamically via `<App client:only="react" />`, guaranteeing uninterrupted access to browser Web Crypto APIs, MediaRecorder, and WebSockets.
-* **Cloudflare Worker & Durable Object Relay**: Fully unified with `@astrojs/cloudflare` server adapter for global zero-latency edge delivery and stateful in-memory room multiplexing.
+NEXUS leverages modern Vite 6 SPA bundling for high performance and security:
+* **Zero Initial Overhead**: Pure client-side SPA with Tailwind CSS v4 design tokens and pure dark `#08090B` theme.
+* **Secure Web Crypto Context**: Ephemeral ECDH key generation, HKDF salting, and AES-256-GCM authenticated cipher operations execute directly in the browser runtime.
+* **Cloudflare Worker & Durable Object Relay**: Stateful in-memory room multiplexing, 15-minute inactivity alarms, and zero-knowledge ciphertext forwarding.
 
 ---
 
@@ -73,10 +83,13 @@ NEXUS leverages Astro 5 Islands for performance and security:
 
 | Capability | Description | Security / Implementation Guarantee |
 | :--- | :--- | :--- |
+| **🛡️ Anti-Surveillance Shield** | Auto-blur on tab switch / window blur + instant `Alt+S` quick toggle + `@media print` block. | Backdrop-blur-2xl overlay with Space/Click reveal; blocks print-to-PDF scraping. |
+| **📋 Auto-Clearing Clipboard** | Automatically purges copied room codes, text, and keys from clipboard after 30s. | Ephemeral background timer + zero-overwrite on clipboard API. |
+| **🔒 CSWSH & Replay Defense** | Origin whitelist on WebSocket handshake + 500-entry replay deduplication filter. | 403 Forbidden on foreign origins; duplicate messageIds rejected in DO. |
 | **🎙️ Voice Notes** | Record up to 120s Opus voice memos with live waveform visualizer & 1× View-Once audio self-destruct. | Client-side memory blob; encrypted via AES-256-GCM; revoked on playback. |
 | **🤖 Zero-Trace Bot** | In-room `@nexus` / `@bot` utility evaluator for math, cipher inspect, coin toss, dice roll. | 100% local browser execution; 0 byte external cloud or LLM leak. |
 | **⚡ WebRTC Direct P2P** | Direct peer-to-peer browser data channel with relay-only signaling fallback. | Direct browser-to-browser pipe; eliminates server relay latency. |
-| **🚨 Panic Screen Wipe** | Emergency `Ctrl+Alt+Q` hotkey that wipes memory keys, storage, and redirects to Wikipedia. | Memory zeroization + storage purge + history overwrite. |
+| **🚨 Panic Screen Wipe** | Emergency `Ctrl+Alt+Q` / `Ctrl+Alt+K` hotkey that wipes memory keys, storage, and redirects. | Media stop + memory zeroization + storage purge + history overwrite. |
 | **👁️ 1× View-Once Media** | Ephemeral photo viewer that self-destructs upon close and revokes memory blobs. | Memory-only blob URLs; recipient ACK locks card for both participants. |
 | **💬 Quoted Replies** | WhatsApp-style reply context banner in composer with click-to-scroll & highlight. | Encrypted inside V2 payload envelope with parent ID and snippet. |
 | **🔥 Reactions** | Quick emoji reactions (`❤️`, `👍`, `😂`, `😮`, `😢`, `🔥`) with toggle support. | Authenticated encrypted reaction envelopes; live participant aggregation. |

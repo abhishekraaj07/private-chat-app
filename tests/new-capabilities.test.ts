@@ -107,6 +107,7 @@ describe('New Capabilities Verification Suite (Direct Links, Panic Burn, Voice N
     it('constructs valid voice note chat message with audio attachment', () => {
       const voiceMessage: ChatMessage = {
         id: 'voice-msg-1',
+        kind: 'message',
         senderId: 'user-alice',
         senderName: 'Alice',
         attachment: {

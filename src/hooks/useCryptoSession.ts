@@ -156,6 +156,8 @@ export function useCryptoSession() {
       isEncrypted: false,
       isPeerVerified: false,
       fingerprint: null,
+      sasCode: null,
+      sasEmojis: null,
       publicKeyJwk: null,
     });
   }, []);
@@ -165,6 +167,8 @@ export function useCryptoSession() {
     isEncrypted: state.isEncrypted,
     isPeerVerified: state.isPeerVerified,
     fingerprint: state.fingerprint,
+    sasCode: state.sasCode,
+    sasEmojis: state.sasEmojis,
     publicKeyJwk: state.publicKeyJwk,
     setPeerVerified,
     initializeSession,

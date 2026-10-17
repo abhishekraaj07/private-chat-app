@@ -53,6 +53,8 @@ interface HeaderProps {
   onOpenStealth?: () => void;
   privacyBlurEnabled?: boolean;
   onTogglePrivacyBlur?: () => void;
+  isScreenBlurred?: boolean;
+  onTriggerBlur?: () => void;
   onPanicKill?: () => void;
 }
 
@@ -86,6 +88,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenStealth,
   privacyBlurEnabled = false,
   onTogglePrivacyBlur,
+  isScreenBlurred = false,
+  onTriggerBlur,
   onPanicKill,
 }) => {
   const [copied, setCopied] = useState(false);
@@ -288,6 +292,25 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <Calculator className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
               <span className="hidden md:inline font-medium">Stealth</span>
+            </button>
+          )}
+
+          {/* Quick Privacy Shield (Alt+S) */}
+          {onTriggerBlur && (
+            <button
+              id="header-privacy-shield-btn"
+              type="button"
+              onClick={onTriggerBlur}
+              className={`h-8 inline-flex items-center justify-center gap-1.5 px-2 sm:px-2.5 rounded-lg border text-xs font-mono transition-all cursor-pointer shadow-xs ${
+                isScreenBlurred
+                  ? 'bg-amber-950/60 border-amber-500/60 text-amber-300'
+                  : 'border-[#1F242D] bg-[#111318] hover:bg-[#1A1E26] text-[#8A909E] hover:text-[#EDEDED]'
+              }`}
+              title="Quick Privacy Shield (Alt+S) - Blur chat screen"
+              aria-label="Quick Privacy Shield"
+            >
+              <EyeOff className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span className="hidden md:inline font-medium">Shield</span>
             </button>
           )}
 

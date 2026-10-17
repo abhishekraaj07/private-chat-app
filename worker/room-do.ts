@@ -49,6 +49,9 @@ export class RoomDurableObject {
   private lastActiveAt: number = 0;
   private sessions: Map<CFWebSocket | WebSocket, ParticipantSession> = new Map();
   private inactivityTimeoutMs: number = DEFAULT_INACTIVITY_TIMEOUT_MS;
+  private seenMessageIds: Set<string> = new Set();
+  private seenMessageList: string[] = [];
+  private static readonly MAX_SEEN_MESSAGES = 500;
 
   constructor(state: DurableObjectState, env: Record<string, unknown>) {
     this.state = state;
@@ -165,6 +168,8 @@ export class RoomDurableObject {
       }
 
       this.sessions.clear();
+      this.seenMessageIds.clear();
+      this.seenMessageList = [];
       await this.state.storage.deleteAll();
     } else {
       await this.resetInactivityAlarm();
@@ -365,6 +370,25 @@ export class RoomDurableObject {
             message: 'Message rate limit exceeded. Please wait a moment.',
           });
           return false;
+        }
+
+        // Server-Side Replay Filter: Reject frames with previously seen messageId
+        if (this.seenMessageIds.has(msg.messageId)) {
+          this.sendTo(ws, {
+            type: 'error',
+            code: 'INVALID_PAYLOAD',
+            message: 'Duplicate message ID rejected (replay protection)',
+          });
+          return false;
+        }
+
+        this.seenMessageIds.add(msg.messageId);
+        this.seenMessageList.push(msg.messageId);
+        if (this.seenMessageList.length > RoomDurableObject.MAX_SEEN_MESSAGES) {
+          const oldest = this.seenMessageList.shift();
+          if (oldest) {
+            this.seenMessageIds.delete(oldest);
+          }
         }
 
         // Relay encrypted ciphertext verbatim to the peer

@@ -35,14 +35,23 @@ function applySecurityHeaders(headers: Headers, allowedOrigin?: string | null): 
   }
 }
 
+const TRUSTED_PRODUCTION_HOSTS = new Set([
+  'private-chat-app.abhishekraaj07.workers.dev',
+]);
+
 function isOriginAllowed(origin: string | null, url: URL): boolean {
-  if (!origin) return true;
+  if (!origin) return true; // Direct API calls or native WebView with no origin
   if (origin === url.origin) return true;
+
   try {
     const originUrl = new URL(origin);
+    // Allow same-host request
     if (originUrl.hostname === url.hostname) return true;
-    if (originUrl.hostname.endsWith('.workers.dev')) return true;
+    // Allow explicitly whitelisted production host
+    if (TRUSTED_PRODUCTION_HOSTS.has(originUrl.hostname)) return true;
   } catch {}
+
+  // Allow local development and mobile apps (Capacitor/Electron/Localhost)
   if (
     origin === 'https://localhost' ||
     origin === 'capacitor://localhost' ||
@@ -53,6 +62,7 @@ function isOriginAllowed(origin: string | null, url: URL): boolean {
   ) {
     return true;
   }
+
   return false;
 }
 
@@ -178,6 +188,16 @@ export default {
       }
 
       if (action === 'ws') {
+        // Enforce strict origin validation on WebSocket upgrade to prevent CSWSH attacks
+        if (!originAllowed) {
+          const errHeaders = new Headers({ 'Content-Type': 'application/json' });
+          applySecurityHeaders(errHeaders, null);
+          return new Response(JSON.stringify({ error: 'Untrusted WebSocket Origin' }), {
+            status: 403,
+            headers: errHeaders,
+          });
+        }
+
         // Forward WebSocket upgrade request to the Durable Object
         const doUrl = new URL(request.url);
         doUrl.pathname = '/ws';

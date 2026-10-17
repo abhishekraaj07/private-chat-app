@@ -20,31 +20,78 @@ export function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export async function copyToClipboard(text: string): Promise<boolean> {
+let activeClipboardTimer: ReturnType<typeof setTimeout> | null = null;
+let lastCopiedValue: string | null = null;
+
+export async function clearClipboardNow(): Promise<boolean> {
+  if (activeClipboardTimer) {
+    clearTimeout(activeClipboardTimer);
+    activeClipboardTimer = null;
+  }
+  lastCopiedValue = null;
+  try {
+    if (navigator?.clipboard?.writeText) {
+      await navigator.clipboard.writeText('');
+      return true;
+    }
+  } catch {
+    // fallback
+  }
+  return false;
+}
+
+export async function copyToClipboard(text: string, autoClearSeconds: number = 30): Promise<boolean> {
+  let ok = false;
   if (navigator?.clipboard?.writeText) {
     try {
       await navigator.clipboard.writeText(text);
-      return true;
+      ok = true;
     } catch {
       // fallback
     }
   }
 
-  // Fallback
-  try {
-    const textArea = document.createElement('textarea');
-    textArea.value = text;
-    textArea.style.position = 'fixed';
-    textArea.style.opacity = '0';
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    const successful = document.execCommand('copy');
-    document.body.removeChild(textArea);
-    return successful;
-  } catch {
-    return false;
+  if (!ok) {
+    // Fallback
+    try {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.opacity = '0';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      ok = document.execCommand('copy');
+      document.body.removeChild(textArea);
+    } catch {
+      ok = false;
+    }
   }
+
+  if (ok && autoClearSeconds > 0) {
+    if (activeClipboardTimer) {
+      clearTimeout(activeClipboardTimer);
+    }
+    lastCopiedValue = text;
+    activeClipboardTimer = setTimeout(async () => {
+      try {
+        if (navigator?.clipboard?.readText) {
+          const current = await navigator.clipboard.readText();
+          if (current === lastCopiedValue) {
+            await navigator.clipboard.writeText('');
+          }
+        } else if (navigator?.clipboard?.writeText) {
+          await navigator.clipboard.writeText('');
+        }
+      } catch {
+        // clipboard permission or tab inactive
+      }
+      activeClipboardTimer = null;
+      lastCopiedValue = null;
+    }, autoClearSeconds * 1000);
+  }
+
+  return ok;
 }
 
 export function formatCallDuration(seconds: number): string {

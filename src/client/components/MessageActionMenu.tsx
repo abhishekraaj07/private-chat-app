@@ -101,7 +101,7 @@ export const MessageActionMenu: React.FC<MessageActionMenuProps> = ({
     if (text) {
       const ok = await copyToClipboard(text);
       if (ok) {
-        showToast('Copied message text', 'success');
+        showToast('Copied message (auto-clears in 30s)', 'success');
       }
     }
     setShowMore(false);

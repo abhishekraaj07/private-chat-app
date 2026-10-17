@@ -337,7 +337,9 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                 ) : null}
 
                 {isEncrypted && (
-                  <ShieldCheck className="w-3 h-3 text-[#38BDF8]/70" title="End-to-end verified" />
+                  <span title="End-to-end verified">
+                    <ShieldCheck className="w-3 h-3 text-[#38BDF8]/70" />
+                  </span>
                 )}
               </div>
             )}
@@ -371,11 +373,11 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                     {isOwn && (
                       <span className="inline-flex items-center ml-0.5">
                         {msg.status === 'read' ? (
-                          <CheckCheck className="w-3 h-3 text-[#38BDF8]" title="Read" />
+                          <span title="Read"><CheckCheck className="w-3 h-3 text-[#38BDF8]" /></span>
                         ) : msg.status === 'delivered' ? (
-                          <CheckCheck className="w-3 h-3 text-[#8A909E]" title="Delivered" />
+                          <span title="Delivered"><CheckCheck className="w-3 h-3 text-[#8A909E]" /></span>
                         ) : (
-                          <Check className="w-3 h-3 text-[#8A909E]" title="Sent" />
+                          <span title="Sent"><Check className="w-3 h-3 text-[#8A909E]" /></span>
                         )}
                       </span>
                     )}
@@ -433,9 +435,9 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                     {isOwn && (
                       <span className="inline-flex items-center ml-0.5">
                         {msg.isViewed ? (
-                          <CheckCheck className="w-3 h-3 text-[#38BDF8]" title="Viewed by peer" />
+                          <span title="Viewed by peer"><CheckCheck className="w-3 h-3 text-[#38BDF8]" /></span>
                         ) : (
-                          <Check className="w-3 h-3 text-[#8A909E]" title="Sent" />
+                          <span title="Sent"><Check className="w-3 h-3 text-[#8A909E]" /></span>
                         )}
                       </span>
                     )}
@@ -513,11 +515,11 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                       {isOwn && (
                         <span className="inline-flex items-center ml-0.5">
                           {msg.status === 'read' ? (
-                            <CheckCheck className="w-3 h-3 text-[#38BDF8]" title="Read" />
+                            <span title="Read"><CheckCheck className="w-3 h-3 text-[#38BDF8]" /></span>
                           ) : msg.status === 'delivered' ? (
-                            <CheckCheck className="w-3 h-3 text-[#8A909E]" title="Delivered" />
+                            <span title="Delivered"><CheckCheck className="w-3 h-3 text-[#8A909E]" /></span>
                           ) : (
-                            <Check className="w-3 h-3 text-[#8A909E]" title="Sent" />
+                            <span title="Sent"><Check className="w-3 h-3 text-[#8A909E]" /></span>
                           )}
                         </span>
                       )}
@@ -576,16 +578,16 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                     {isOwn && (
                       <span className="inline-flex items-center ml-0.5" id={`msg-status-${msg.id}`}>
                         {msg.status === 'sending' && (
-                          <Clock className="w-3 h-3 text-[#8A909E] animate-pulse" title="Sending..." />
+                          <span title="Sending..."><Clock className="w-3 h-3 text-[#8A909E] animate-pulse" /></span>
                         )}
                         {msg.status === 'sent' && (
-                          <Check className="w-3 h-3 text-[#8A909E]" title="Sent to relay" />
+                          <span title="Sent to relay"><Check className="w-3 h-3 text-[#8A909E]" /></span>
                         )}
                         {msg.status === 'delivered' && (
-                          <CheckCheck className="w-3 h-3 text-[#8A909E]" title="Delivered to peer" />
+                          <span title="Delivered to peer"><CheckCheck className="w-3 h-3 text-[#8A909E]" /></span>
                         )}
                         {msg.status === 'read' && (
-                          <CheckCheck className="w-3 h-3 text-[#38BDF8]" title="Read by peer" />
+                          <span title="Read by peer"><CheckCheck className="w-3 h-3 text-[#38BDF8]" /></span>
                         )}
                         {msg.status === 'failed' && onRetry && (
                           <button
